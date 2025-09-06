@@ -147,7 +147,13 @@ function mergeFruits(scene, f1, f2) {
 }
 
 function spawnFruit(scene) {
-    let allowedFruits = fruitTypes.slice(0, maxUnlockedIndex + 1);
+    let allowedFruits;
+    if(maxUnlockedIndex === 9) {
+        allowedFruits = fruitTypes.slice(0, maxUnlockedIndex - 1);
+    } else {
+        allowedFruits = fruitTypes.slice(0, maxUnlockedIndex + 1);
+    }
+    
     let type = Phaser.Utils.Array.GetRandom(allowedFruits);
 
     currentFruit = scene.matter.add.image(config.width/2, 20, type, null, {
