@@ -9,6 +9,12 @@ var config = {
             debug: false
         }
     },
+    scale: {
+        parent: 'game-container',
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 500,
+        height: 700
+    },
     scene: {
         preload: preload,
         create: create,
@@ -19,24 +25,38 @@ var config = {
 const game = new Phaser.Game(config);
 
 let fruits = [];
-let fruitTypes = ["tomato", "apple", "peach", "watermelon", "orange", "plum"];
+let fruitTypes = ["tomato", "apple", "peach", "watermelon", "orange", "plum", "avocado", "strawberry", "pineapple", "dragonfruit"];
 let maxUnlockedIndex = 0;
 let currentFruit = null;
 let cursors;
+let score = 0;
+let scoreText;
 
 function preload() {
-    this.load.image('background', 'assets/BlueBackground.jpg'),
-    this.load.image('tomato', 'assets/tomato.png'),
-    this.load.image('apple', 'assets/apple.png'),
-    this.load.image('peach', 'assets/peach.png'),
-    this.load.image('watermelon', 'assets/watermelon.png')
-    this.load.image('orange', 'assets/orange.png')
-    this.load.image('plum', 'assets/plum.png')
+    this.load.image('background', 'Assets/BlueBackground.jpg');
+    this.load.image('tomato', 'Assets/Tomato.png');
+    this.load.image('apple', 'Assets/Apple.png');
+    this.load.image('peach', 'Assets/Peach.png');
+    this.load.image('watermelon', 'Assets/Watermelon.png');
+    this.load.image('orange', 'Assets/Orange.png');
+    this.load.image('plum', 'Assets/Plum.png');
+    this.load.image('avocado', 'Assets/Avocado.png');
+    this.load.image('strawberry', 'Assets/Strawberry.png');
+    this.load.image('pineapple', 'Assets/pineapple.png');
+    this.load.image('dragonfruit', 'Assets/Dragonfruit.png');
 }
 
 function create() {
     
-    this.add.image(config.width/2, config.height/2, 'background'),
+    this.add.image(config.width/2, config.height/2, 'background');
+
+    scoreText = this.add.text(config.width - 10, 10, 'Score: 0', {
+        fontSize: '24px',
+        fontFamily: 'Arial',
+        color: '#ffffff'
+    });
+    scoreText.setOrigin(1, 0);
+    
     
     this.matter.world.setBounds(0, 0, config.width, config.height);
 
@@ -46,6 +66,7 @@ function create() {
         if (currentFruit) {
             currentFruit.setStatic(false); // let it fall
             fruits.push(currentFruit);
+            currentFruit.body.isSensor = false;
             currentFruit = null;
 
             // spawn a new one after short delay
@@ -73,6 +94,7 @@ function create() {
             }
         });
     });
+    this.children.bringToTop(scoreText);
 }
 
 function update() {
@@ -119,6 +141,9 @@ function mergeFruits(scene, f1, f2) {
     if (idx + 1 > maxUnlockedIndex) {
         maxUnlockedIndex = idx + 1;
     }
+    
+    score += (idx + 1) * 10;
+    scoreText.setText('Score: ' + score);
 }
 
 function spawnFruit(scene) {
@@ -131,4 +156,5 @@ function spawnFruit(scene) {
     });
 
     currentFruit.setStatic(true);
+    currentFruit.body.isSensor = true;
 }
