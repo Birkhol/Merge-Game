@@ -42,7 +42,7 @@ function preload() {
     this.load.image('plum', 'Assets/Plum.png');
     this.load.image('avocado', 'Assets/Avocado.png');
     this.load.image('strawberry', 'Assets/Strawberry.png');
-    this.load.image('pineapple', 'Assets/pineapple.png');
+    this.load.image('pineapple', 'Assets/Pineapple.png');
     this.load.image('dragonfruit', 'Assets/Dragonfruit.png');
 }
 
