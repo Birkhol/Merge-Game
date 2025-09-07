@@ -64,7 +64,7 @@ app.get("/leaderboard", async (req, res) => {
 });
 
 // Fallback route for SPA (optional if you have client-side routing)
-app.get("/*", (req, res) => {
+app.get("/*path", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
