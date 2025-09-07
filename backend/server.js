@@ -19,7 +19,9 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Get the game icon
-app.use(favicon(path.join(__dirname, "../MergeGameIcon.ico")));
+app.get("/MergeGameIcon.ico", (req, res) => {
+  res.sendFile(path.join(__dirname, "../MergeGameIcon.ico"));
+});
 
 // Supabase credentials
 const supabase = createClient(

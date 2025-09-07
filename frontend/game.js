@@ -569,7 +569,7 @@ async function submitScore(playerName, score) {
 
 async function showLeaderboard(scene) {
     // Create a semi-transparent overlay
-    const overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.8)
+    const overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.9)
         .setOrigin(0, 0);
     
     menuUI.push(overlay);
@@ -587,7 +587,7 @@ async function showLeaderboard(scene) {
         
         // Show top 10 scores
         data.slice(0, 10).forEach((entry, index) => {
-            const text = scene.add.text(config.width / 2, 140 + index * 40, `${index+1}. ${entry.player_name}: ${entry.score}`, {
+            const text = scene.add.text(config.width / 2, 175 + index * 40, `${index+1}. ${entry.player_name}: ${entry.score}`, {
                 fontSize: '32px',
                 fontFamily: 'Arial',
                 color: '#ffff00'
