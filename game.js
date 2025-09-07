@@ -34,7 +34,7 @@ let scoreText;
 let gameOver = false;
 let gameOverText;
 let gameStarted = false;
-let deathLine = 650;
+let deathLine = 75;
 let restartButton;
 let endGameUI = [];
 let menuUI = [];
