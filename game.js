@@ -288,6 +288,9 @@ function endGame(scene) {
     gameOverText.setOrigin(0.5);
     endGameUI.push(gameOverText);  
 
+    highscore = savedHighscore;
+    highscoreText.setText('Highscore: ' + highscore);
+
     // Show highscore
     const highscoreText = scene.add.text(config.width / 2, config.height / 2 - 100, 'Highscore: ' + savedHighscore, {
         fontSize: '48px',
