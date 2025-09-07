@@ -310,9 +310,6 @@ function endGame(scene) {
     }).setOrigin(0.5);
     endGameUI.push(highscoreTextMenu);
 
-    submitScore();
-
-
     // Create Restart Button
     restartButton = scene.add.text(config.width / 2, config.height / 2 + 100, 'Restart', {
         fontSize: '52px',
@@ -475,17 +472,16 @@ function showMenu(scene) {
     });
 
     menuUI.push(playButton);
-    }
-    
-    const leaderboardButton = scene.add.text(config.width / 2, config.height / 2 + 80, 'Leaderboard', {
-    fontSize: '36px',
-    fontFamily: 'Arial',
-    color: '#00ffff',
-    backgroundColor: '#000000',
-    padding: { x: 10, y: 5 }
-}).setOrigin(0.5).setInteractive();
 
-leaderboardButton.on('pointerdown', async () => {
+    const leaderboardButton = scene.add.text(config.width / 2, config.height / 2 + 80, 'Leaderboard', {
+        fontSize: '36px',
+        fontFamily: 'Arial',
+        color: '#00ffff',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 }
+    }).setOrigin(0.5).setInteractive();
+
+    leaderboardButton.on('pointerdown', async () => {
     // remove menu UI
     menuUI.forEach(obj => obj.destroy());
     menuUI = [];
@@ -496,6 +492,7 @@ leaderboardButton.on('pointerdown', async () => {
 
 menuUI.push(leaderboardButton);
 
+    }
 }
 
 function startGame(scene) {
@@ -530,12 +527,12 @@ async function submitScore(playerName, score) {
 
 async function showLeaderboard(scene) {
     // Create a semi-transparent overlay
-    const overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.7)
+    const overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.8)
         .setOrigin(0, 0);
     
     menuUI.push(overlay);
 
-    const title = scene.add.text(config.width / 2, 150, 'Leaderboard', {
+    const title = scene.add.text(config.width / 2, 100, 'Leaderboard', {
         fontSize: '48px',
         fontFamily: 'Arial',
         color: '#ffffff'
@@ -548,7 +545,7 @@ async function showLeaderboard(scene) {
         
         // Show top 10 scores
         data.slice(0, 10).forEach((entry, index) => {
-            const text = scene.add.text(config.width / 2, 120 + index * 40, `${index+1}. ${entry.player_name}: ${entry.score}`, {
+            const text = scene.add.text(config.width / 2, 140 + index * 40, `${index+1}. ${entry.player_name}: ${entry.score}`, {
                 fontSize: '32px',
                 fontFamily: 'Arial',
                 color: '#ffff00'
