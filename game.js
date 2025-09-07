@@ -34,11 +34,13 @@ let scoreText;
 let gameOver = false;
 let gameOverText;
 let gameStarted = false;
-let deathLine = 75;
+let deathLine = 650;
 let restartButton;
 let endGameUI = [];
 let menuUI = [];
 let overlay;
+let highscore = 0;
+let highscoreText;
 let ignoreNextPress = false;
 let aboveDeathLineTimer = new Map();
 
@@ -75,10 +77,10 @@ function create() {
     scoreText.setOrigin(1, 0);
     scoreText.setDepth(1000);
     
-    let highscore = localStorage.getItem('highscore') || 0;
+    highscore = localStorage.getItem('highscore') || 0;
     highscore = parseInt(highscore);
 
-    let highscoreText = this.add.text(config.width - 10, 5, 'Highscore: ' + highscore, {
+    highscoreText = this.add.text(config.width - 10, 5, 'Highscore: ' + highscore, {
         fontSize: '20px',
         fontFamily: 'Arial',
         color: '#ffff00'
