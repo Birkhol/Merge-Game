@@ -19,3 +19,7 @@
     cursor: url('Assets/Cursor.png'), pointer;
     display: block;       
   }
+
+  input {
+    text-align: center;
+  }

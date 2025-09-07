@@ -15,6 +15,9 @@ var config = {
         width: 500,
         height: 700
     },
+    dom: {
+        createContainer: true
+    },
     scene: {
         preload: preload,
         create: create,
@@ -279,6 +282,12 @@ function endGame(scene) {
         savedHighscore = score;
     }
 
+    // Submit score to backend
+    const playerName = localStorage.getItem('playerName');
+    if (playerName) {
+        submitScore(playerName, score);
+    }
+
     // Update global and ingame UI
     highscore = savedHighscore;
     highscoreText.setText('Highscore: ' + highscore);
@@ -300,6 +309,9 @@ function endGame(scene) {
         color: '#ffff00',
     }).setOrigin(0.5);
     endGameUI.push(highscoreTextMenu);
+
+    submitScore();
+
 
     // Create Restart Button
     restartButton = scene.add.text(config.width / 2, config.height / 2 + 100, 'Restart', {
@@ -396,12 +408,55 @@ function showMenu(scene) {
         .setDepth(0);
     menuUI.push(overlay);
 
-    const title = scene.add.text(config.width / 2, config.height / 2 - 100, 'Merge Game', {
+    const title = scene.add.text(config.width / 2, config.height / 2 - 130, 'Merge Game', {
         fontSize: '48px',
         fontFamily: 'Arial',
         color: '#ffffff'
     }).setOrigin(0.5);
     menuUI.push(title);
+
+    // Check if username is already saved
+    let playerName = localStorage.getItem("playerName");
+
+    if (!playerName) {
+        const nameLabel = scene.add.text(config.width / 2, config.height / 2 - 60, 'Enter your name:', {
+            fontSize: '24px',
+            fontFamily: 'Arial',
+            color: '#ffffff'
+        }).setOrigin(0.5);
+        menuUI.push(nameLabel);
+
+        // Create a DOM input box
+        const nameInput = scene.add.dom(config.width / 2, config.height / 2, 'input', {
+            type: 'text',
+            fontSize: '20px',
+            padding: '5px',
+            width: '200px'
+        });
+        menuUI.push(nameInput);
+
+        const saveButton = scene.add.text(config.width / 2, config.height / 2 + 60, 'Save Name', {
+            fontSize: '28px',
+            fontFamily: 'Arial',
+            color: '#00ff00',
+            backgroundColor: '#000000',
+            padding: { x: 10, y: 5 }
+        }).setOrigin(0.5).setInteractive();
+
+        saveButton.on('pointerdown', () => {
+            let enteredName = nameInput.node.value.trim();
+            if (enteredName.length > 0) {
+                localStorage.setItem("playerName", enteredName);
+                // Clear menu and reload it
+                menuUI.forEach(obj => obj.destroy());
+                menuUI = [];
+                showMenu(scene);
+            }
+        });
+
+        menuUI.push(saveButton);
+
+    } else {
 
     const playButton = scene.add.text(config.width / 2, config.height / 2, 'Play', {
         fontSize: '36px',
@@ -420,6 +475,27 @@ function showMenu(scene) {
     });
 
     menuUI.push(playButton);
+    }
+    
+    const leaderboardButton = scene.add.text(config.width / 2, config.height / 2 + 80, 'Leaderboard', {
+    fontSize: '36px',
+    fontFamily: 'Arial',
+    color: '#00ffff',
+    backgroundColor: '#000000',
+    padding: { x: 10, y: 5 }
+}).setOrigin(0.5).setInteractive();
+
+leaderboardButton.on('pointerdown', async () => {
+    // remove menu UI
+    menuUI.forEach(obj => obj.destroy());
+    menuUI = [];
+
+    // show leaderboard
+    await showLeaderboard(scene);
+});
+
+menuUI.push(leaderboardButton);
+
 }
 
 function startGame(scene) {
@@ -436,4 +512,68 @@ function startGame(scene) {
 
     ignoreNextPress = true;
     gameStarted = true;
+}
+
+async function submitScore(playerName, score) {
+    try {
+        const response = await fetch("http://localhost:3000/highscore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: playerName, score })
+        });
+        const data = await response.json();
+        console.log("Score submitted:", data);
+    } catch (err) {
+        console.error("Failed to submit score:", err);
+    }
+}
+
+async function showLeaderboard(scene) {
+    // Create a semi-transparent overlay
+    const overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.7)
+        .setOrigin(0, 0);
+    
+    menuUI.push(overlay);
+
+    const title = scene.add.text(config.width / 2, 50, 'Leaderboard', {
+        fontSize: '48px',
+        fontFamily: 'Arial',
+        color: '#ffffff'
+    }).setOrigin(0.5);
+    menuUI.push(title);
+
+    try {
+        const response = await fetch('http://localhost:3000/leaderboard');
+        const data = await response.json(); // expect an array of { username, score }
+        
+        // Show top 10 scores
+        data.slice(0, 10).forEach((entry, index) => {
+            const text = scene.add.text(config.width / 2, 120 + index * 40, `${index+1}. ${entry.playerName}: ${entry.score}`, {
+                fontSize: '32px',
+                fontFamily: 'Arial',
+                color: '#ffff00'
+            }).setOrigin(0.5);
+            menuUI.push(text);
+        });
+
+    } catch (err) {
+        console.error('Failed to load leaderboard:', err);
+    }
+
+    // Back button to return to menu
+    const backButton = scene.add.text(config.width / 2, config.height - 80, 'Back', {
+        fontSize: '36px',
+        fontFamily: 'Arial',
+        color: '#00ff00',
+        backgroundColor: '#000000',
+        padding: { x: 10, y: 5 }
+    }).setOrigin(0.5).setInteractive();
+
+    backButton.on('pointerdown', () => {
+        menuUI.forEach(obj => obj.destroy());
+        menuUI = [];
+        showMenu(scene);
+    });
+
+    menuUI.push(backButton);
 }
