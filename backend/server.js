@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import favicon from "serve-favicon";
 
 dotenv.config();
 
@@ -16,6 +17,9 @@ const __dirname = path.dirname(__filename);
 
 // Serve static frontend files (index.html, game.js, style.css, Assets folder)
 app.use(express.static(path.join(__dirname, "../frontend")));
+
+// Get the game icon
+app.use(favicon(path.join(__dirname, "../MergeGameIcon.ico")));
 
 // Supabase credentials
 const supabase = createClient(

@@ -266,8 +266,7 @@ function endGame(scene) {
         }
     
     if (quitButton) {
-        quitButton.destroy();
-        quitButton = null;
+        quitButton.setVisible(false);
     }
     
     // Create a semi-transparent dark overlay
@@ -391,6 +390,8 @@ function restartGame(scene) {
     // Reset merge index
     maxUnlockedIndex = 0;
     gameStarted = true;
+
+    quitButton.setVisible(true);
 
     // Spawn the first fruit
     spawnFruit(scene);
