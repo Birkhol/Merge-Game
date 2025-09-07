@@ -34,6 +34,8 @@ let scoreText;
 let gameOver = false;
 let gameOverText;
 let deathLine = 70;
+let restartButton;
+let endGameUI = [];
 let aboveDeathLineTimer = new Map();
 
 function preload() {
@@ -61,13 +63,22 @@ function create() {
     graphics.lineTo(config.width, deathLine);
     graphics.strokePath();
 
-    scoreText = this.add.text(config.width - 10, 10, 'Score: 0', {
+    scoreText = this.add.text(config.width - 10, 35, 'Score: 0', {
         fontSize: '24px',
         fontFamily: 'Arial',
         color: '#ffffff'
     });
     scoreText.setOrigin(1, 0);
     
+    let highscore = localStorage.getItem('highscore') || 0;
+    highscore = parseInt(highscore);
+
+    let highscoreText = this.add.text(config.width - 10, 5, 'Highscore: ' + highscore, {
+        fontSize: '20px',
+        fontFamily: 'Arial',
+        color: '#ffff00'
+    });
+    highscoreText.setOrigin(1, 0);
     
     this.matter.world.setBounds(0, 0, config.width, config.height);
 
@@ -222,21 +233,64 @@ function spawnFruit(scene) {
 }
 
 function endGame(scene) {
+    if(gameOver) {
+        currentFruit.destroy();
+        currentFruit = null;
+        return;
+    }  
     gameOver = true;
 
     // Freeze all fruits
     fruits.forEach(f => { if (f.body) f.setStatic(true); });
     aboveDeathLineTimer.clear();
+    
+    // Save highscore
+    let savedHighscore = localStorage.getItem('highscore') || 0;
+    savedHighscore = parseInt(savedHighscore);
+    if (score > savedHighscore) {
+        localStorage.setItem('highscore', score);
+        savedHighscore = score;
+    }
 
     // Show Game Over text
     gameOverText = scene.add.text(config.width / 2, config.height / 2, "Game Over", {
         fontSize: '48px',
         fontFamily: 'Arial',
-        color: '#ff0000'
+        color: '#ff0000',
     });
     gameOverText.setOrigin(0.5);
+    endGameUI.push(gameOverText);
 
     currentFruit = null;
+
+    
+
+    // Show highscore
+    const highscoreText = scene.add.text(config.width / 2, config.height / 2 + 60, 'Highscore: ' + savedHighscore, {
+        fontSize: '48px',
+        fontFamily: 'Arial',
+        color: '#ffff00',
+    }).setOrigin(0.5);
+    endGameUI.push(highscoreText);
+
+    // Create Restart Button
+    restartButton = scene.add.text(config.width / 2, config.height / 2 + 120, 'Restart', {
+        fontSize: '52px',
+        fontFamily: 'Arial',
+        color: '#00ff00ff',
+        backgroundColor: '#444444ff',
+        padding: { x: 10, y: 5 }
+    }).setOrigin(0.5).setInteractive();
+
+    restartButton.on('pointerdown', () => {
+        restartGame(scene);
+    });
+    endGameUI.push(restartButton);
+
+    if (currentFruit) {
+        currentFruit.destroy();
+        currentFruit = null;
+    }
 }
 
 function canDrop(fruit, others) {
@@ -250,6 +304,28 @@ function canDrop(fruit, others) {
         }
     }
     return true; // safe to drop
+}
+
+function restartGame(scene) {
+    // Remove all fruits
+    fruits.forEach(f => f.destroy());
+    fruits = [];
+
+    // Destroy all end-game UI
+    endGameUI.forEach(obj => obj.destroy());
+    endGameUI = [];
+    
+    gameOver = false;
+
+    // Reset score
+    score = 0;
+    scoreText.setText('Score: 0');
+
+    // Reset merge index
+    maxUnlockedIndex = 0;
+
+    // Spawn the first fruit
+    spawnFruit(scene);
 }
 
 
