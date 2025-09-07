@@ -516,7 +516,7 @@ function startGame(scene) {
 
 async function submitScore(playerName, score) {
     try {
-        const response = await fetch("http://localhost:3000/submit-score", {
+        const response = await fetch("https://merge-game.onrender.com/submit-score", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ player_name: playerName, score })
@@ -535,7 +535,7 @@ async function showLeaderboard(scene) {
     
     menuUI.push(overlay);
 
-    const title = scene.add.text(config.width / 2, 50, 'Leaderboard', {
+    const title = scene.add.text(config.width / 2, 150, 'Leaderboard', {
         fontSize: '48px',
         fontFamily: 'Arial',
         color: '#ffffff'
@@ -543,7 +543,7 @@ async function showLeaderboard(scene) {
     menuUI.push(title);
 
     try {
-        const response = await fetch('http://localhost:3000/leaderboard');
+        const response = await fetch('https://merge-game.onrender.com/leaderboard');
         const data = await response.json(); // expect an array of { username, score }
         
         // Show top 10 scores
