@@ -34,7 +34,7 @@ let scoreText;
 let gameOver = false;
 let gameOverText;
 let gameStarted = false;
-let deathLine = 75;
+let deathLine = 650;
 let restartButton;
 let endGameUI = [];
 let menuUI = [];
@@ -279,6 +279,11 @@ function endGame(scene) {
         savedHighscore = score;
     }
 
+    // Update global and ingame UI
+    highscore = savedHighscore;
+    highscoreText.setText('Highscore: ' + highscore);
+
+
     // Show Game Over text
     gameOverText = scene.add.text(config.width / 2, config.height / 2 - 200, "Game Over", {
         fontSize: '48px',
@@ -288,16 +293,13 @@ function endGame(scene) {
     gameOverText.setOrigin(0.5);
     endGameUI.push(gameOverText);  
 
-    highscore = savedHighscore;
-    highscoreText.setText('Highscore: ' + highscore);
-
     // Show highscore
-    const highscoreText = scene.add.text(config.width / 2, config.height / 2 - 100, 'Highscore: ' + savedHighscore, {
+    const highscoreTextMenu = scene.add.text(config.width / 2, config.height / 2 - 100, 'Highscore: ' + highscore, {
         fontSize: '48px',
         fontFamily: 'Arial',
         color: '#ffff00',
     }).setOrigin(0.5);
-    endGameUI.push(highscoreText);
+    endGameUI.push(highscoreTextMenu);
 
     // Create Restart Button
     restartButton = scene.add.text(config.width / 2, config.height / 2 + 100, 'Restart', {
