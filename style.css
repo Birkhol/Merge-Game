@@ -16,5 +16,6 @@
   }
 
   canvas {
+    cursor: url('Assets/Cursor.png'), pointer;
     display: block;       
   }
