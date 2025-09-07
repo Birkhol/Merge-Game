@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Serve static frontend files (index.html, game.js, style.css, Assets folder)
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Supabase credentials
 const supabase = createClient(
@@ -64,8 +64,8 @@ app.get("/leaderboard", async (req, res) => {
 });
 
 // Fallback route for SPA (optional if you have client-side routing)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+app.get("*", (_, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
 const PORT = process.env.PORT || 3000;

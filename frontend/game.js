@@ -516,10 +516,10 @@ function startGame(scene) {
 
 async function submitScore(playerName, score) {
     try {
-        const response = await fetch("http://localhost:3000/highscore", {
+        const response = await fetch("http://localhost:3000/submit-score", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: playerName, score })
+            body: JSON.stringify({ player_name: playerName, score })
         });
         const data = await response.json();
         console.log("Score submitted:", data);
@@ -548,7 +548,7 @@ async function showLeaderboard(scene) {
         
         // Show top 10 scores
         data.slice(0, 10).forEach((entry, index) => {
-            const text = scene.add.text(config.width / 2, 120 + index * 40, `${index+1}. ${entry.playerName}: ${entry.score}`, {
+            const text = scene.add.text(config.width / 2, 120 + index * 40, `${index+1}. ${entry.player_name}: ${entry.score}`, {
                 fontSize: '32px',
                 fontFamily: 'Arial',
                 color: '#ffff00'
