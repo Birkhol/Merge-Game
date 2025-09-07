@@ -44,6 +44,7 @@ let menuUI = [];
 let overlay;
 let highscore = 0;
 let highscoreText;
+let quitButton;
 let ignoreNextPress = false;
 let aboveDeathLineTimer = new Map();
 
@@ -263,6 +264,11 @@ function endGame(scene) {
             currentFruit.destroy();
             currentFruit = null;
         }
+    
+    if (quitButton) {
+        quitButton.destroy();
+        quitButton = null;
+    }
     
     // Create a semi-transparent dark overlay
     overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.75)
@@ -509,6 +515,41 @@ function startGame(scene) {
 
     ignoreNextPress = true;
     gameStarted = true;
+
+    // --- QUIT BUTTON ---
+    quitButton = scene.add.text(10, 10, 'Quit', {
+        fontSize: '28px',
+        fontFamily: 'Arial',
+        color: '#ffffffff',
+        backgroundColor: '#1a1a1aff',
+        padding: { x: 3, y: 2 }
+    }).setOrigin(0, 0).setInteractive().setDepth(1000);
+
+    quitButton.on('pointerdown', () => {
+        // Remove all fruits
+        fruits.forEach(f => f.destroy());
+        fruits = [];
+
+        // Destroy current fruit if exists
+        if (currentFruit) {
+            currentFruit.destroy();
+            currentFruit = null;
+        }
+
+        // Remove quit button
+        quitButton.destroy();
+        quitButton = null;
+
+        // Remove end game UI if any
+        endGameUI.forEach(obj => obj.destroy());
+        endGameUI = [];
+
+        // Go back to menu
+        showMenu(scene);
+
+        gameOver = false;
+        gameStarted = false;
+    });
 }
 
 async function submitScore(playerName, score) {
