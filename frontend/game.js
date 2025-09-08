@@ -198,19 +198,22 @@ function dropFruit(scene) {
 function mergeFruits(scene, f1, f2) {
 
     if (gameOver || f1.isMerging || f2.isMerging || !f1 || !f2 || !f1.body || !f2.body) return;
+    
+    f1.isMerging = true;
+    f2.isMerging = true;
 
     let idx = fruitTypes.indexOf(f1.texture.key);
     if (idx === fruitTypes.length - 1) {
-
+        
+        if (f1.body) scene.matter.world.remove(f1.body);
+        if (f2.body) scene.matter.world.remove(f2.body);
+        
+        f1.setActive(false).setVisible(false).setSensor(true);
+        f2.setActive(false).setVisible(false).setSensor(true);
+        
         // Get middle position of fruits
         const x = (f1.x + f2.x) / 2;
         const y = (f1.y + f2.y) / 2;
-
-        f1.isMerging = true;
-        f2.isMerging = true;
-
-        f1.setActive(false).setVisible(false).setSensor(true);
-        f2.setActive(false).setVisible(false).setSensor(true);
         
         // Floating "+200" text
         const bonusText = scene.add.text(x, y, "+200", {
@@ -225,29 +228,26 @@ function mergeFruits(scene, f1, f2) {
             targets: bonusText,
             y: y - 50,
             alpha: 0,
-            duration: 900,
+            duration: 700,
             ease: 'Power1',
             onComplete: () => bonusText.destroy()
         });
-        
-        if (f1.body) scene.matter.world.remove(f1.body);
-        if (f2.body) scene.matter.world.remove(f2.body);
-        
-        scene.time.delayedCall(100, () => {
-            f1.destroy();
-            f2.destroy();
-        });
-        
+
         scene.sound.play("mergeSound", { volume: 0.5 });
         scene.sound.play("mergeLastSound", { volume: 0.2 });
+        
         score += (idx + 11) * 10;
-        scoreText.setText('Score: ' + score);      
+        scoreText.setText('Score: ' + score);  
+
+        scene.time.delayedCall(160, () => {
+            f1.destroy();
+            f2.destroy();
+        });    
         
         return;
     }
     
-    f1.isMerging = true;
-    f2.isMerging = true;
+    
 
     // next fruit type
     let nextType = fruitTypes[idx + 1];
@@ -261,6 +261,8 @@ function mergeFruits(scene, f1, f2) {
     f1.setActive(false).setVisible(false).setSensor(true);
     f2.setActive(false).setVisible(false).setSensor(true);
     scene.time.delayedCall(160, () => {
+        if (f1.body) scene.matter.world.remove(f1.body);
+        if (f2.body) scene.matter.world.remove(f2.body);
         f1.destroy();
         f2.destroy();
     });
