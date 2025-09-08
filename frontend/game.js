@@ -348,7 +348,7 @@ function endGame(scene) {
     // Submit score to backend
     const playerName = localStorage.getItem('playerName');
     if (playerName) {
-        submitScore(playerName, score);
+        submitScore(scene, playerName, score);
     }
 
     // Update global and ingame UI
@@ -597,7 +597,7 @@ function startGame(scene) {
 
         const playerName = localStorage.getItem('playerName');
         if(score >= 1500 && playerName) {
-            submitScore(playerName, score);
+            submitScore(scene, playerName, score);
         }
 
         // Remove quit button
@@ -616,7 +616,7 @@ function startGame(scene) {
     });
 }
 
-async function submitScore(playerName, score) {
+async function submitScore(scene, playerName, score) {
     try {
         const response = await fetch("https://merge-game.onrender.com/submit-score", {
             method: "POST",
@@ -630,8 +630,11 @@ async function submitScore(playerName, score) {
         const top10 = await leaderBoardResponse.json();
 
         const minTopScore = Math.min(...top10.map(entry => entry.score));
-        if (score >= minTopScore) {
+        console.log("minTopScore: ", minTopScore);
+
+        if (score > minTopScore) {
             showLeaderboardNotification(scene, score);
+            console.log("Notification sent:", score, "higher than:", minTopScore);
         }
     } catch (err) {
         console.error("Failed to submit score:", err);
