@@ -45,6 +45,8 @@ let overlay;
 let highscore = 0;
 let highscoreText;
 let quitButton;
+let blockTimer = null;
+const blockedDelay = 10000; // Timer for checking blocked moves
 let ignoreNextPress = false;
 let aboveDeathLineTimer = new Map();
 
@@ -593,6 +595,11 @@ function startGame(scene) {
             currentFruit = null;
         }
 
+        const playerName = localStorage.getItem('playerName');
+        if(score >= 1500 && playerName) {
+            submitScore(playerName, score);
+        }
+
         // Remove quit button
         quitButton.destroy();
         quitButton = null;
@@ -618,6 +625,14 @@ async function submitScore(playerName, score) {
         });
         const data = await response.json();
         console.log("Score submitted:", data);
+
+        const leaderBoardResponse = await fetch("https://merge-game.onrender.com/leaderboard");
+        const top10 = await leaderBoardResponse.json();
+
+        const minTopScore = Math.min(...top10.map(entry => entry.score));
+        if (score >= minTopScore) {
+            showLeaderboardNotification(scene, score);
+        }
     } catch (err) {
         console.error("Failed to submit score:", err);
     }
@@ -687,5 +702,24 @@ function playMergeAnimation(scene, fruit) {
                 fruit.setScale(1);
             }
         }
+    });
+}
+
+// Show a small "Score in top 10!" notification
+function showLeaderboardNotification(scene, score) {
+    const notif = scene.add.text(config.width - 20, config.height - 20, `${score} is in top 10, Saved to leaderboard!`, {
+        fontSize: '16px',
+        fontFamily: 'Arial',
+        color: '#eeff00ff',
+        align: 'right'
+    }).setOrigin(1, 1);
+
+    // Tween to fade out after 6 seconds
+    scene.tweens.add({
+        targets: notif,
+        alpha: 1,
+        duration: 5300,
+        ease: 'Power2',
+        onComplete: () => notif.destroy()
     });
 }
