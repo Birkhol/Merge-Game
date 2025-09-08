@@ -37,7 +37,7 @@ let scoreText;
 let gameOver = false;
 let gameOverText;
 let gameStarted = false;
-let deathLine = 75;
+let deathLine = 0;
 let restartButton;
 let endGameUI = [];
 let menuUI = [];
@@ -60,6 +60,8 @@ function preload() {
     this.load.image('strawberry', 'Assets/Strawberry.png');
     this.load.image('pineapple', 'Assets/Pineapple.png');
     this.load.image('dragonfruit', 'Assets/Dragonfruit.png');
+    this.load.audio("mergeSound", "Assets/MergePop.mp3");
+    this.load.audio("mergeLastSound", "Assets/Ping.mp3");
 }
 
 function create() {
@@ -194,16 +196,58 @@ function dropFruit(scene) {
 }
 
 function mergeFruits(scene, f1, f2) {
-    if (gameOver) return;
-    // find index of current fruit type
+
+    if (gameOver || f1.isMerging || f2.isMerging || !f1 || !f2 || !f1.body || !f2.body) return;
+
     let idx = fruitTypes.indexOf(f1.texture.key);
     if (idx === fruitTypes.length - 1) {
-        f1.destroy();
-        f2.destroy();
-        score += (idx + 1) * 10;
-        scoreText.setText('Score: ' + score);
+
+        // Get middle position of fruits
+        const x = (f1.x + f2.x) / 2;
+        const y = (f1.y + f2.y) / 2;
+
+        f1.isMerging = true;
+        f2.isMerging = true;
+
+        f1.setActive(false).setVisible(false).setSensor(true);
+        f2.setActive(false).setVisible(false).setSensor(true);
+        
+        // Floating "+200" text
+        const bonusText = scene.add.text(x, y, "+200", {
+            fontSize: '24px',
+            fontFamily: 'Arial',
+            color: '#ffd900ff',
+            stroke: '#000000',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        scene.tweens.add({
+            targets: bonusText,
+            y: y - 50,
+            alpha: 0,
+            duration: 900,
+            ease: 'Power1',
+            onComplete: () => bonusText.destroy()
+        });
+        
+        if (f1.body) scene.matter.world.remove(f1.body);
+        if (f2.body) scene.matter.world.remove(f2.body);
+        
+        scene.time.delayedCall(100, () => {
+            f1.destroy();
+            f2.destroy();
+        });
+        
+        scene.sound.play("mergeSound", { volume: 0.5 });
+        scene.sound.play("mergeLastSound", { volume: 0.2 });
+        score += (idx + 11) * 10;
+        scoreText.setText('Score: ' + score);      
+        
         return;
     }
+    
+    f1.isMerging = true;
+    f2.isMerging = true;
 
     // next fruit type
     let nextType = fruitTypes[idx + 1];
@@ -214,9 +258,12 @@ function mergeFruits(scene, f1, f2) {
     aboveDeathLineTimer.delete(f1);
     aboveDeathLineTimer.delete(f2);
 
-    // destroy old fruits
-    f1.destroy();
-    f2.destroy();
+    f1.setActive(false).setVisible(false).setSensor(true);
+    f2.setActive(false).setVisible(false).setSensor(true);
+    scene.time.delayedCall(160, () => {
+        f1.destroy();
+        f2.destroy();
+    });
 
     // spawn new merged fuit
     let newFruit = scene.matter.add.image(x, y, nextType, null, {
@@ -225,7 +272,14 @@ function mergeFruits(scene, f1, f2) {
     });
 
     newFruit.isActive = true;
+    newFruit.isMerging = false;
     fruits.push(newFruit);
+
+    // Animation and sound
+    if (newFruit?.body) {
+        playMergeAnimation(scene, newFruit);
+    }
+    scene.sound.play("mergeSound", { volume: 0.5 });
 
     // Unlock next fruittype to spawn
     if (idx + 1 > maxUnlockedIndex) {
@@ -615,4 +669,21 @@ async function showLeaderboard(scene) {
     });
 
     menuUI.push(backButton);
+}
+
+function playMergeAnimation(scene, fruit) {
+    if (!fruit || !fruit.body) return;
+
+    fruit.setScale(0.5);
+    scene.tweens.add({
+        targets: fruit,
+        scale: 1,
+        duration: 150,
+        ease: "Back.Out",
+        onComplete: () => {
+            if (fruit && fruit.setScale) {
+                fruit.setScale(1);
+            }
+        }
+    });
 }
