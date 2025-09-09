@@ -35,9 +35,10 @@ let cursors;
 let score = 0;
 let scoreText;
 let gameOver = false;
+let deathLineGraphics;
 let gameOverText;
 let gameStarted = false;
-let deathLine = 75;
+let deathLine = 75; // Default 75
 let restartButton;
 let endGameUI = [];
 let menuUI = [];
@@ -46,7 +47,6 @@ let highscore = 0;
 let highscoreText;
 let quitButton;
 let blockTimer = null;
-const blockedDelay = 10000; // Timer for checking blocked moves
 let ignoreNextPress = false;
 let aboveDeathLineTimer = new Map();
 
@@ -70,12 +70,13 @@ function create() {
     
     this.add.image(config.width/2, config.height/2, 'background');
 
-    let graphics = this.add.graphics();
-    graphics.lineStyle(2, 0xff0000, 1);
-    graphics.beginPath();
-    graphics.moveTo(0, deathLine);
-    graphics.lineTo(config.width, deathLine);
-    graphics.strokePath();
+    deathLineGraphics = this.add.graphics();
+    deathLineGraphics.lineStyle(2, 0xff0000, 1);
+    deathLineGraphics.beginPath();
+    deathLineGraphics.moveTo(0, deathLine);
+    deathLineGraphics.lineTo(config.width, deathLine);
+    deathLineGraphics.strokePath();
+    deathLineGraphics.setVisible(false);
 
     scoreText = this.add.text(config.width - 10, 35, 'Score: 0', {
         fontSize: '24px',
@@ -324,7 +325,8 @@ function endGame(scene) {
         }
     
     if (quitButton) {
-        quitButton.setVisible(false);
+        quitButton.bg.setVisible(false);
+        quitButton.label.setVisible(false);
     }
     
     // Create a semi-transparent dark overlay
@@ -373,33 +375,21 @@ function endGame(scene) {
     }).setOrigin(0.5);
     endGameUI.push(highscoreTextMenu);
 
-    // Create Restart Button
-    restartButton = scene.add.text(config.width / 2, config.height / 2 + 100, 'Restart', {
-        fontSize: '52px',
-        fontFamily: 'Arial',
-        color: '#00ff00ff',
-        backgroundColor: '#444444ff',
-        padding: { x: 10, y: 5 }
-    }).setOrigin(0.5).setInteractive();
-
-    restartButton.on('pointerdown', () => {
-        ignoreNextPress = true;
+    // Restart the game button
+    restartButton = createButton(scene, config.width / 2, config.height / 2 + 115, 200, 60, 0x4CAF50, '#ffffff', 'Restart', () => {
+        ignoreNextPress = false;
         restartGame(scene);
     });
-    endGameUI.push(restartButton);
+    endGameUI.push(restartButton.bg);
+    endGameUI.push(restartButton.label);
 
-    const menuButton = scene.add.text(config.width / 2, config.height / 2 + 180, 'Menu', {
-    fontSize: '32px',
-    fontFamily: 'Arial',
-    color: '#00ffff',
-    backgroundColor: '#000000',
-    padding: { x: 10, y: 5 }
-}).setOrigin(0.5).setInteractive();
+    // Back to menu button
+    const menuButton = createButton(scene, config.width / 2, config.height / 2 + 200, 180, 60, 0x282828, '#ffffff', 'Menu', () => {
 
-menuButton.on('pointerdown', () => {
     // Remove end game UI
     endGameUI.forEach(obj => obj.destroy());
     endGameUI = [];
+    deathLineGraphics.setVisible(false);
 
     // Destroy any remaining fruits
     fruits.forEach(f => f.destroy());
@@ -413,7 +403,8 @@ menuButton.on('pointerdown', () => {
     showMenu(scene);
 });
 
-endGameUI.push(menuButton);
+endGameUI.push(menuButton.bg);
+endGameUI.push(menuButton.label);
     }
 }
 
@@ -449,7 +440,8 @@ function restartGame(scene) {
     maxUnlockedIndex = 0;
     gameStarted = true;
 
-    quitButton.setVisible(true);
+    quitButton.bg.setVisible(true);
+    quitButton.label.setVisible(true);
 
     // Spawn the first fruit
     spawnFruit(scene);
@@ -520,48 +512,39 @@ function showMenu(scene) {
 
     } else {
 
-    const playButton = scene.add.text(config.width / 2, config.height / 2, 'Play', {
-        fontSize: '36px',
-        fontFamily: 'Arial',
-        color: '#00ff00',
-        backgroundColor: '#000000',
-        padding: { x: 10, y: 5 }
-    }).setOrigin(0.5).setInteractive();
-
-    playButton.on('pointerdown', () => {
+    // Play button
+    const playButton = createButton(scene, config.width / 2, config.height / 2, 180, 60, 0x4CAF50, '#ffffff', 'Play', () => {
         // remove menu UI
         menuUI.forEach(obj => obj.destroy());
         menuUI = [];
 
         startGame(scene);
-    });
+    }
+);
 
-    menuUI.push(playButton);
+menuUI.push(playButton.bg);
+menuUI.push(playButton.label);
 
-    const leaderboardButton = scene.add.text(config.width / 2, config.height / 2 + 80, 'Leaderboard', {
-        fontSize: '36px',
-        fontFamily: 'Arial',
-        color: '#00ffff',
-        backgroundColor: '#000000',
-        padding: { x: 10, y: 5 }
-    }).setOrigin(0.5).setInteractive();
+    const leaderboardButton = createButton(scene, config.width / 2, config.height / 2 + 120, 220, 60, 0x27A3F5, '#ffffff', 'Leaderboard', async () => {
 
-    leaderboardButton.on('pointerdown', async () => {
     // remove menu UI
     menuUI.forEach(obj => obj.destroy());
     menuUI = [];
 
     // show leaderboard
     await showLeaderboard(scene);
-});
+    }
+);
 
-menuUI.push(leaderboardButton);
+menuUI.push(leaderboardButton.bg);
+menuUI.push(leaderboardButton.label);
 
     }
 }
 
 function startGame(scene) {
     gameOver = false;
+    deathLineGraphics.setVisible(true);
 
     // Reset score and fruits
     score = 0;
@@ -570,21 +553,20 @@ function startGame(scene) {
     fruits = [];
 
     // Spawn first fruit
-    spawnFruit(scene);
+    if (!gameOver) {
+        spawnFruit(scene);
+    }
 
-    ignoreNextPress = true;
+    ignoreNextPress = false;
     gameStarted = true;
 
-    // --- QUIT BUTTON ---
-    quitButton = scene.add.text(10, 10, 'Quit', {
-        fontSize: '28px',
-        fontFamily: 'Arial',
-        color: '#ffffffff',
-        backgroundColor: '#1a1a1aff',
-        padding: { x: 3, y: 2 }
-    }).setOrigin(0, 0).setInteractive().setDepth(1000);
+    // Quit button -> quits the current game and goes back to menu
+    quitButton = createButton(scene, 30, 25, 50, 40, 0x303030, '#ffffff', 'Quit', () => {
 
-    quitButton.on('pointerdown', () => {
+        scene.tweens.killAll();
+        scene.time.clearPendingEvents();
+        deathLineGraphics.setVisible(false);
+
         // Remove all fruits
         fruits.forEach(f => f.destroy());
         fruits = [];
@@ -600,10 +582,6 @@ function startGame(scene) {
             submitScore(scene, playerName, score);
         }
 
-        // Remove quit button
-        quitButton.destroy();
-        quitButton = null;
-
         // Remove end game UI if any
         endGameUI.forEach(obj => obj.destroy());
         endGameUI = [];
@@ -611,9 +589,13 @@ function startGame(scene) {
         // Go back to menu
         showMenu(scene);
 
-        gameOver = false;
+        gameOver = true;
         gameStarted = false;
+        
+        quitButton.bg.destroy();
+        quitButton.label.destroy();
     });
+    
 }
 
 async function submitScore(scene, playerName, score) {
@@ -629,12 +611,10 @@ async function submitScore(scene, playerName, score) {
         const leaderBoardResponse = await fetch("https://merge-game.onrender.com/leaderboard");
         const top10 = await leaderBoardResponse.json();
 
+        // Send notification if score was higher than 10th place on leaderboard
         const minTopScore = Math.min(...top10.map(entry => entry.score));
-        console.log("minTopScore: ", minTopScore);
-
         if (score > minTopScore) {
             showLeaderboardNotification(scene, score);
-            console.log("Notification sent:", score, "higher than:", minTopScore);
         }
     } catch (err) {
         console.error("Failed to submit score:", err);
@@ -642,6 +622,9 @@ async function submitScore(scene, playerName, score) {
 }
 
 async function showLeaderboard(scene) {
+
+    deathLineGraphics.setVisible(false);
+
     // Create a semi-transparent overlay
     const overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.9)
         .setOrigin(0, 0);
@@ -674,21 +657,15 @@ async function showLeaderboard(scene) {
     }
 
     // Back button to return to menu
-    const backButton = scene.add.text(config.width / 2, config.height - 80, 'Back', {
-        fontSize: '36px',
-        fontFamily: 'Arial',
-        color: '#00ff00',
-        backgroundColor: '#000000',
-        padding: { x: 10, y: 5 }
-    }).setOrigin(0.5).setInteractive();
+    const backButton = createButton(config.width / 2, config.height - 80, 180, 60, 0x4CAF50, '#ffffff', 'Back', () => {
 
-    backButton.on('pointerdown', () => {
         menuUI.forEach(obj => obj.destroy());
         menuUI = [];
         showMenu(scene);
     });
 
-    menuUI.push(backButton);
+    menuUI.push(backButton.bg);
+    menuUI.push(backButton.label);
 }
 
 function playMergeAnimation(scene, fruit) {
@@ -725,4 +702,44 @@ function showLeaderboardNotification(scene, score) {
         ease: 'Power2',
         onComplete: () => notif.destroy()
     });
+}
+
+function createButton(scene, x, y, width, height, bgColor = 0x4CAF50, textColor = '#ffffff', text, callback) {
+    // Button background
+    const bg = scene.add.rectangle(x, y, width, height, bgColor, 1)
+        .setOrigin(0.5)
+        .setStrokeStyle(2, 0xffffff, 0.2) // subtle border
+        .setInteractive({ useHandCursor: false })
+        .setDepth(1001)
+
+    // Button label
+    const label = scene.add.text(x, y, text, {
+        fontSize: `${Math.floor(height / 2.5)}px`,
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        color: textColor
+    }).setOrigin(0.5).setDepth(1002);
+
+    // Hover effect
+    bg.on('pointerover', () => {
+        scene.tweens.add({ targets: [bg, label], scale: 1.05, duration: 150, ease: 'Power1' });
+    });
+
+    // Pointer out
+    bg.on('pointerout', () => {
+        scene.tweens.add({ targets: [bg, label], scale: 1, duration: 150, ease: 'Power1' });
+    });
+
+    // Press down
+    bg.on('pointerdown', () => {
+        scene.tweens.add({ targets: [bg, label], scale: 0.95, duration: 100, ease: 'Power1' });
+    });
+
+    // Release
+    bg.on('pointerup', () => {
+        scene.tweens.add({ targets: [bg, label], scale: 1.05, duration: 150, ease: 'Power1' });
+        callback();
+    });
+
+    return { bg, label };
 }
