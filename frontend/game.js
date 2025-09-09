@@ -657,7 +657,7 @@ async function showLeaderboard(scene) {
     }
 
     // Back button to return to menu
-    const backButton = createButton(config.width / 2, config.height - 80, 180, 60, 0x4CAF50, '#ffffff', 'Back', () => {
+    const backButton = createButton(scene, config.width / 2, config.height - 80, 180, 60, 0x4CAF50, '#ffffff', 'Back', () => {
 
         menuUI.forEach(obj => obj.destroy());
         menuUI = [];
