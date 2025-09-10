@@ -794,10 +794,12 @@ var config = {
 
 const game = new Phaser.Game(config);
 
+// Global variables
 let fruits = [];
 let fruitTypes = ["tomato2", "apple2", "peach2", "watermelon2", "orange2", "plum2", "avocado2", "strawberry2", "pineapple2", "dragonfruit2"];
 let maxUnlockedIndex = 0;
 let currentFruit = null;
+let hamburger;
 let fruitHeight;
 let cursors;
 let score = 0;
@@ -810,12 +812,19 @@ let deathLine = 116; // Default 116
 let restartButton;
 let endGameUI = [];
 let menuUI = [];
+let settingsIngameUI = [];
 let overlay;
+let overlayHamburger;
 let highscore = 0;
 let highscoreText;
 let quitButton;
+let settingsIngameButton;
+let quitIngameButton;
+let backIngameButton;
+let inGameMenuContainer;
 let blockTimer = null;
 let ignoreNextPress = false;
+let inSettings = false;
 let aboveDeathLineTimer = new Map();
 
 function preload() {
@@ -892,12 +901,17 @@ function create() {
     }
     
 
-    this.input.on("pointerdown", (pointer) => {
+    this.input.on("pointerdown", (pointer, currentlyOver) => {
 
         if (!gameStarted) return;
         // Ignores first mouse click to prevent instant fruit drop on restarting or starting game
         if (ignoreNextPress) {
             ignoreNextPress = false;
+            return;
+        }
+
+        // Check if pointer is over any interactive UI object
+        if (currentlyOver.length > 0 || inSettings) {
             return;
         }
 
@@ -1066,6 +1080,7 @@ function mergeFruits(scene, f1, f2) {
     newFruit.isActive = true;
     newFruit.isMerging = false;
     fruits.push(newFruit);
+    if (inSettings) newFruit.setVisible(false);
 
     // Animation and sound
     if (newFruit?.body) {
@@ -1120,11 +1135,15 @@ function endGame(scene) {
             currentFruit.destroy();
             currentFruit = null;
         }
+
+    // Clear up in-game UI
+    if (hamburger) hamburger.bg.destroy(), hamburger.label.destroy();
+    if (quitIngameButton) quitIngameButton.bg.setVisible(false), quitIngameButton.label.setVisible(false);
+    if (settingsIngameButton) settingsIngameButton.bg.setVisible(false), settingsIngameButton.label.setVisible(false);
+    if (overlayHamburger) overlayHamburger.destroy();
+
+    clearSettingsIngameUI();
     
-    if (quitButton) {
-        quitButton.bg.setVisible(false);
-        quitButton.label.setVisible(false);
-    }
     
     // Create a semi-transparent dark overlay
     overlay = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.75)
@@ -1181,8 +1200,7 @@ function endGame(scene) {
         ignoreNextPress = false;
         restartGame(scene);
     });
-    endGameUI.push(restartButton.bg);
-    endGameUI.push(restartButton.label);
+    endGameUI.push(restartButton.bg), endGameUI.push(restartButton.label);
 
     // Back to menu button
     const menuButton = createButton(scene, config.width / 2, config.height / 2 + 370, 270, 85, 0x282828, '#ffffff', 'Menu', () => {
@@ -1200,12 +1218,13 @@ function endGame(scene) {
         currentFruit = null;
     }
 
+    hamburger.bg.destroy(), hamburger.label.destroy();
+
     // Show menu again
     showMenu(scene);
 });
 
-endGameUI.push(menuButton.bg);
-endGameUI.push(menuButton.label);
+endGameUI.push(menuButton.bg), endGameUI.push(menuButton.label);
     }
 }
 
@@ -1227,6 +1246,9 @@ function restartGame(scene) {
     fruits.forEach(f => f.destroy());
     fruits = [];
 
+    inSettings = false;
+    if (inGameMenuContainer) inGameMenuContainer.setVisible(false);
+
     // Destroy all end-game UI
     endGameUI.forEach(obj => obj.destroy());
     endGameUI = [];
@@ -1241,11 +1263,14 @@ function restartGame(scene) {
     maxUnlockedIndex = 0;
     gameStarted = true;
 
-    quitButton.bg.setVisible(true);
-    quitButton.label.setVisible(true);
+    deathLineGraphics.setVisible(true);
+    scoreText.setVisible(true);
+    highscoreText.setVisible(true);
 
     // Spawn the first fruit
     spawnFruit(scene);
+
+    createInGameMenu(scene);
 }
 
 // Menu function
@@ -1253,6 +1278,8 @@ function showMenu(scene) {
     maxUnlockedIndex = 0;
     gameStarted = false;
     highscoreText.setVisible(true);
+    inSettings = false;
+    if(hamburger) hamburger.bg.destroy(), hamburger.label.destroy();
 
     // Clearing settings UI
     menuUI.forEach(obj => obj.destroy());
@@ -1367,6 +1394,7 @@ function startGame(scene) {
     gameOver = false;
     deathLineGraphics.setVisible(true);
     scoreText.setVisible(true);
+    inSettings = false;
 
     // Reset score and fruits
     score = 0;
@@ -1382,42 +1410,7 @@ function startGame(scene) {
     ignoreNextPress = false;
     gameStarted = true;
 
-    // Quit button -> quits the current game and goes back to menu
-    quitButton = createButton(scene, 45, 40, 75, 60, 0x303030, '#ffffff', 'Quit', () => {
-
-        scene.tweens.killAll();
-        scene.time.clearPendingEvents();
-        deathLineGraphics.setVisible(false);
-
-        // Remove all fruits
-        fruits.forEach(f => f.destroy());
-        fruits = [];
-
-        // Destroy current fruit if exists
-        if (currentFruit) {
-            currentFruit.destroy();
-            currentFruit = null;
-        }
-
-        const playerName = localStorage.getItem('playerName');
-        if(score >= 1500 && playerName) {
-            submitScore(scene, playerName, score);
-        }
-
-        // Remove end game UI if any
-        endGameUI.forEach(obj => obj.destroy());
-        endGameUI = [];
-
-        // Go back to menu
-        showMenu(scene);
-
-        gameOver = true;
-        gameStarted = false;
-        
-        quitButton.bg.destroy();
-        quitButton.label.destroy();
-    });
-    
+    createInGameMenu(scene);
 }
 
 async function submitScore(scene, playerName, score) {
@@ -1477,7 +1470,7 @@ async function showLeaderboard(scene) {
         
         const response = await fetch('https://merge-game.onrender.com/leaderboard');
         const data = await response.json(); // an array of { username, score }
-        
+
         if (!active) return; // Prevents loading leaderboard if user quit to menu        
         
         // Show top 10 scores
@@ -1703,4 +1696,226 @@ if (!document.getElementById("slider-style")) {
 
     // Keep track so you can clear later
     menuUI = settingsUI;
+}
+
+// Hamburger menu in-game
+function createInGameMenu(scene) {
+    const menuUI = [];
+    //if(inGameMenuContainer) inGameMenuContainer.setVisible(true);
+
+    // Hamburger button
+    hamburger = createButton(scene, 40, 40, 60, 60, 0x303030, '#ffffff', '☰', () => {
+        // Toggle menu visibility
+        if (inGameMenuContainer.visible) {
+            inGameMenuContainer.setVisible(false);
+            inSettings = false;
+            overlayHamburger.destroy();
+        } else {
+            inGameMenuContainer.setVisible(true);
+            inSettings = true;
+            // Create a semi-transparent overlay
+        overlayHamburger = scene.add.rectangle(0, 0, config.width, config.height, 0x000000, 0.9)
+            .setOrigin(0, 0).setDepth(100);
+    
+        menuUI.push(overlayHamburger);
+            }
+        });
+    menuUI.push(hamburger.bg, hamburger.label);
+
+    // Container for in-game menu buttons (quit, settings)
+    inGameMenuContainer = scene.add.container(0, 0).setDepth(300);
+    inGameMenuContainer.setVisible(false); // start hidden
+
+    // Quit button
+    quitIngameButton = createButton(scene, config.width / 2, config.height / 2 + 60, 250, 70, 0xF44336, '#ffffff', 'Quit', () => {
+        scene.tweens.killAll();
+        scene.time.clearPendingEvents();
+        deathLineGraphics.setVisible(false);
+
+        // Remove all fruits
+        fruits.forEach(f => f.destroy());
+        fruits = [];
+
+        // Destroy current fruit if exists
+        if (currentFruit) {
+            currentFruit.destroy();
+            currentFruit = null;
+        }
+
+        const playerName = localStorage.getItem('playerName');
+        if(score >= 1500 && playerName) {
+            submitScore(scene, playerName, score);
+        }
+
+        // Remove end game UI if any
+        endGameUI.forEach(obj => obj.destroy());
+        endGameUI = [];
+
+        // Go back to menu
+        showMenu(scene);
+
+        gameOver = true;
+        gameStarted = false;
+        
+        quitIngameButton.bg.destroy();
+        quitIngameButton.label.destroy();
+        inGameMenuContainer.setVisible(false);
+        hamburger.bg.destroy();
+        hamburger.label.destroy();
+        overlayHamburger.destroy();
+    });
+    inGameMenuContainer.add([quitIngameButton.bg, quitIngameButton.label]);
+
+    // Settings button
+    settingsIngameButton = createButton(scene, config.width / 2, config.height / 2 - 60, 250, 70, 0x4CAF50, '#ffffff', 'Settings', () => {
+        showIngameSettings(scene);
+        inGameMenuContainer.setVisible(false);
+        overlayHamburger.setVisible(false);
+        currentFruit.setVisible(false);
+    });
+    inGameMenuContainer.add([settingsIngameButton.bg, settingsIngameButton.label]);
+
+    menuUI.push(inGameMenuContainer);
+
+    return menuUI;
+}
+
+// Settings page in-game
+function showIngameSettings(scene) {
+
+    // Temporarily hide in-game UI and fruits on screen
+    highscoreText.setVisible(false);
+    scoreText.setVisible(false);
+    deathLineGraphics.setVisible(false);
+    hamburger.bg.setVisible(false), hamburger.label.setVisible(false);
+    inSettings = true;
+    fruits.forEach(f => f.setVisible(false));
+
+    const title = scene.add.text(config.width / 2, 150, "Settings", {
+        fontSize: '90px',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
+    settingsIngameUI.push(title);
+
+    // Fullscreen button
+    const fullscreenButton = createButton(scene, config.width / 2, config.height / 2 + 220, 280, 70, 0x4CAF50, '#ffffff', 'Toggle Fullscreen', () => {
+
+    const container = document.getElementById('game-container');
+
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen(); // Safari
+        else if (container.msRequestFullscreen) container.msRequestFullscreen(); // IE/Edge
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+    // Mobile iOS fallback (simulate fullscreen)
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+        container.classList.toggle('fullscreen-mobile');
+    }
+});
+    settingsIngameUI.push(fullscreenButton.bg, fullscreenButton.label);
+
+    const volumeText = scene.add.text(config.width / 2, config.height / 2 - 40, "Volume", {
+        fontSize: '30px',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3
+    }).setOrigin(0.5);
+    settingsIngameUI.push(volumeText);
+
+    const sliderWrapper = document.createElement("div");
+    sliderWrapper.style.position = "absolute";
+    sliderWrapper.style.left = "50%";
+    sliderWrapper.style.transform = "translateX(-50%)";
+    sliderWrapper.style.cursor = "none";
+
+    const slider = document.createElement("input");
+    slider.type = 'range';
+    slider.min = 0;
+    slider.max = 1;
+    slider.step = 0.01;
+    slider.value = scene.sound.volume;
+    slider.style.width = "250px";
+    slider.style.height = "14px";
+    slider.style.background ="#333";
+    slider.style.borderRadius = "5px";
+    slider.style.webKitAppearance = "none";
+    slider.style.appearance = "none";
+    slider.style.outline = "none";
+    slider.style.cursor = "ew-resize";
+    slider.style.setProperty("--thumb-size", "30px");
+    slider.style.setProperty("--thumb-color", "#4CAF50");
+    sliderWrapper.appendChild(slider);
+
+    // Volume slider (using DOM input range)
+    const volumeSlider = scene.add.dom(config.width / 2 - 320, config.height / 2, sliderWrapper).setOrigin(0.5).setDepth(1003);
+
+    slider.addEventListener('input', (event) => {
+    scene.sound.volume = parseFloat(event.target.value);
+    });
+
+if (!document.getElementById("slider-style")) {
+    const style = document.createElement("style");
+    style.id = "slider-style";
+    style.innerHTML = `
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 50%;
+      background: var(--thumb-color);
+      cursor: ew-resize;
+      border: none;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 50%;
+      background: var(--thumb-color);
+      cursor: ew-resize;
+      border: none;
+    }
+    `;
+    document.head.appendChild(style);
+}
+
+    settingsIngameUI.push(volumeSlider);
+
+    // Back button
+    backIngameButton = createButton(scene, config.width / 2, config.height / 2 + 440, 180, 60, 0xF44336, '#ffffff', 'Back', () => {
+        settingsIngameUI.forEach(obj => obj.destroy());
+        settingsIngameUI.push(backIngameButton.bg, backIngameButton.label);
+        backIngameButton.bg.destroy()
+        backIngameButton.label.destroy();
+        highscoreText.setVisible(true);
+        scoreText.setVisible(true);
+        deathLineGraphics.setVisible(true);
+        hamburger.bg.setVisible(true), hamburger.label.setVisible(true);
+        currentFruit.setVisible(true);
+        inSettings = false;
+        fruits.forEach(fruit => fruit.setVisible(true));
+    });
+    settingsIngameUI.push(backIngameButton.bg, backIngameButton.label);
+
+    // Keep track so you can clear later
+    menuUI = settingsIngameUI;
+}
+
+function clearSettingsIngameUI() {
+
+    if (settingsIngameUI) {
+        settingsIngameUI.forEach(obj => obj.destroy());
+        settingsIngameUI = [];
+    }
+
 }
