@@ -1449,6 +1449,14 @@ async function showLeaderboard(scene) {
         strokeThickness: 4
     }).setOrigin(0.5);
     menuUI.push(title);
+    
+    // Back button to return to menu
+    const backButton = createButton(scene, config.width / 2, config.height - 70, 260, 85, 0x4CAF50, '#ffffff', 'Back', () => {
+
+        menuUI.forEach(obj => obj.destroy());
+        menuUI = [];
+        showMenu(scene);
+    });
 
     try {
         const response = await fetch('https://merge-game.onrender.com/leaderboard');
@@ -1467,16 +1475,14 @@ async function showLeaderboard(scene) {
         });
 
     } catch (err) {
+        const errorLeaderboard = scene.add.text(config.width / 2, config.height / 2 - 60, 'Could not load leaderboard', {
+            fontSize: '40px',
+            fontFamily: 'Arial',
+            color: '#c90000ff'
+        }).setOrigin(0.5);
+        menuUI.push(errorLeaderboard);
         console.error('Failed to load leaderboard:', err);
     }
-
-    // Back button to return to menu
-    const backButton = createButton(scene, config.width / 2, config.height - 70, 260, 85, 0x4CAF50, '#ffffff', 'Back', () => {
-
-        menuUI.forEach(obj => obj.destroy());
-        menuUI = [];
-        showMenu(scene);
-    });
 
     menuUI.push(backButton.bg);
     menuUI.push(backButton.label);
