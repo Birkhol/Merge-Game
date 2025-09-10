@@ -1252,6 +1252,11 @@ function restartGame(scene) {
 function showMenu(scene) {
     maxUnlockedIndex = 0;
     gameStarted = false;
+    highscoreText.setVisible(true);
+
+    // Clearing settings UI
+    menuUI.forEach(obj => obj.destroy());
+    menuUI = [];
 
     // Reset score
     score = 0;
@@ -1316,8 +1321,7 @@ function showMenu(scene) {
                 showMenu(scene);
         });
 
-        menuUI.push(saveButton.bg);
-        menuUI.push(saveButton.label);
+        menuUI.push(saveButton.bg, saveButton.label);
 
     } else {
 
@@ -1331,8 +1335,7 @@ function showMenu(scene) {
     }
 );
 
-menuUI.push(playButton.bg);
-menuUI.push(playButton.label);
+menuUI.push(playButton.bg, playButton.label);
 
     const leaderboardButton = createButton(scene, config.width / 2, config.height / 2 + 320, 370, 90, 0x27A3F5, '#ffffff', 'Leaderboard', async () => {
 
@@ -1345,8 +1348,17 @@ menuUI.push(playButton.label);
     }
 );
 
-menuUI.push(leaderboardButton.bg);
-menuUI.push(leaderboardButton.label);
+menuUI.push(leaderboardButton.bg, leaderboardButton.label);
+
+const settingsButton = createButton(scene, config.width / 2, config.height / 2 + 460, 160, 60, 0x424242, '#ffffff', 'Settings', () => {
+    // clear menu
+    menuUI.forEach(obj => obj.destroy());
+    menuUI = [];
+
+    showSettings(scene);
+});
+
+menuUI.push(settingsButton.bg, settingsButton.label);
 
     }
 }
@@ -1457,6 +1469,7 @@ async function showLeaderboard(scene) {
         menuUI = [];
         showMenu(scene);
     });
+    menuUI.push(backButton.bg, backButton.label);
 
     try {
         const response = await fetch('https://merge-game.onrender.com/leaderboard');
@@ -1478,14 +1491,18 @@ async function showLeaderboard(scene) {
         const errorLeaderboard = scene.add.text(config.width / 2, config.height / 2 - 60, 'Could not load leaderboard', {
             fontSize: '40px',
             fontFamily: 'Arial',
-            color: '#c90000ff'
+            color: '#c90000ff',
         }).setOrigin(0.5);
+        scene.tweens.add({
+        targets: errorLeaderboard,
+        alpha: 1,
+        ease: 'Power2',
+        duration: 5300,
+        onComplete: () => errorLeaderboard.destroy()
+    });
         menuUI.push(errorLeaderboard);
         console.error('Failed to load leaderboard:', err);
     }
-
-    menuUI.push(backButton.bg);
-    menuUI.push(backButton.label);
 }
 
 function playMergeAnimation(scene, fruit) {
@@ -1564,4 +1581,113 @@ function createButton(scene, x, y, width, height, bgColor = 0x4CAF50, textColor 
     });
 
     return { bg, label };
+}
+
+// Settings page
+function showSettings(scene) {
+    const settingsUI = [];
+    highscoreText.setVisible(false);
+
+    const title = scene.add.text(config.width / 2, 150, "Settings", {
+        fontSize: '90px',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
+    settingsUI.push(title);
+
+    // Fullscreen button
+    const fullscreenButton = createButton(scene, config.width / 2, config.height / 2 + 220, 280, 70, 0x4CAF50, '#ffffff', 'Toggle Fullscreen', () => {
+    const container = document.getElementById('game-container');
+    if (!document.fullscreenElement) {
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen(); // Safari
+        else if (container.msRequestFullscreen) container.msRequestFullscreen(); // IE/Edge
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+    }
+});
+    settingsUI.push(fullscreenButton.bg, fullscreenButton.label);
+
+    const volumeText = scene.add.text(config.width / 2, config.height / 2 - 40, "Volume", {
+        fontSize: '30px',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3
+    }).setOrigin(0.5);
+    settingsUI.push(volumeText);
+
+    const sliderWrapper = document.createElement("div");
+    sliderWrapper.style.position = "absolute";
+    sliderWrapper.style.left = "50%";
+    sliderWrapper.style.transform = "translateX(-50%)";
+    sliderWrapper.style.cursor = "none";
+
+    const slider = document.createElement("input");
+    slider.type = 'range';
+    slider.min = 0;
+    slider.max = 1;
+    slider.step = 0.01;
+    slider.value = scene.sound.volume;
+    slider.style.width = "250px";
+    slider.style.height = "14px";
+    slider.style.background ="#333";
+    slider.style.borderRadius = "5px";
+    slider.style.webKitAppearance = "none";
+    slider.style.appearance = "none";
+    slider.style.outline = "none";
+    slider.style.cursor = "ew-resize";
+    slider.style.setProperty("--thumb-size", "30px");
+    slider.style.setProperty("--thumb-color", "#4CAF50");
+    sliderWrapper.appendChild(slider);
+
+    // Volume slider (using DOM input range)
+    const volumeSlider = scene.add.dom(config.width / 2 - 320, config.height / 2, sliderWrapper).setOrigin(0.5).setDepth(1003);
+
+    slider.addEventListener('input', (event) => {
+    scene.sound.volume = parseFloat(event.target.value);
+    });
+
+if (!document.getElementById("slider-style")) {
+    const style = document.createElement("style");
+    style.id = "slider-style";
+    style.innerHTML = `
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 50%;
+      background: var(--thumb-color);
+      cursor: ew-resize;
+      border: none;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: var(--thumb-size);
+      height: var(--thumb-size);
+      border-radius: 50%;
+      background: var(--thumb-color);
+      cursor: ew-resize;
+      border: none;
+    }
+    `;
+    document.head.appendChild(style);
+}
+
+    settingsUI.push(volumeSlider);
+
+    // Back button
+    const backButton = createButton(scene, config.width / 2, config.height / 2 + 440, 180, 60, 0xF44336, '#ffffff', 'Back', () => {
+        settingsUI.forEach(obj => obj.destroy());
+        showMenu(scene);
+    });
+    settingsUI.push(backButton.bg, backButton.label);
+
+    // Keep track so you can clear later
+    menuUI = settingsUI;
 }
