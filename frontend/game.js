@@ -1461,10 +1461,12 @@ async function showLeaderboard(scene) {
         strokeThickness: 4
     }).setOrigin(0.5);
     menuUI.push(title);
+
+    let active = true;
     
     // Back button to return to menu
     const backButton = createButton(scene, config.width / 2, config.height - 70, 260, 85, 0x4CAF50, '#ffffff', 'Back', () => {
-
+        active = false;
         menuUI.forEach(obj => obj.destroy());
         menuUI = [];
         showMenu(scene);
@@ -1472,8 +1474,11 @@ async function showLeaderboard(scene) {
     menuUI.push(backButton.bg, backButton.label);
 
     try {
+        
         const response = await fetch('https://merge-game.onrender.com/leaderboard');
-        const data = await response.json(); // expect an array of { username, score }
+        const data = await response.json(); // an array of { username, score }
+        
+        if (!active) return; // Prevents loading leaderboard if user quit to menu        
         
         // Show top 10 scores
         data.slice(0, 10).forEach((entry, index) => {
@@ -1488,6 +1493,7 @@ async function showLeaderboard(scene) {
         });
 
     } catch (err) {
+        if (!active) return;
         const errorLeaderboard = scene.add.text(config.width / 2, config.height / 2 - 60, 'Could not load leaderboard', {
             fontSize: '40px',
             fontFamily: 'Arial',
@@ -1600,13 +1606,20 @@ function showSettings(scene) {
 
     // Fullscreen button
     const fullscreenButton = createButton(scene, config.width / 2, config.height / 2 + 220, 280, 70, 0x4CAF50, '#ffffff', 'Toggle Fullscreen', () => {
+
     const container = document.getElementById('game-container');
-    if (!document.fullscreenElement) {
+
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         if (container.requestFullscreen) container.requestFullscreen();
         else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen(); // Safari
         else if (container.msRequestFullscreen) container.msRequestFullscreen(); // IE/Edge
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+    // Mobile iOS fallback (simulate fullscreen)
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+        container.classList.toggle('fullscreen-mobile');
     }
 });
     settingsUI.push(fullscreenButton.bg, fullscreenButton.label);
