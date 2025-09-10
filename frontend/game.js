@@ -798,6 +798,7 @@ let fruits = [];
 let fruitTypes = ["tomato2", "apple2", "peach2", "watermelon2", "orange2", "plum2", "avocado2", "strawberry2", "pineapple2", "dragonfruit2"];
 let maxUnlockedIndex = 0;
 let currentFruit = null;
+let fruitHeight;
 let cursors;
 let score = 0;
 let scoreText;
@@ -891,7 +892,7 @@ function create() {
     }
     
 
-    this.input.on("pointerdown", () => {
+    this.input.on("pointerdown", (pointer) => {
 
         if (!gameStarted) return;
         // Ignores first mouse click to prevent instant fruit drop on restarting or starting game
@@ -901,6 +902,9 @@ function create() {
         }
 
         if (currentFruit) {
+            // Makes playing on touch screen easier
+            currentFruit.setPosition(pointer.x, 20);
+
             if(canDrop(currentFruit, fruits)) {
             currentFruit.setStatic(false); // let it fall
             fruits.push(currentFruit);
@@ -1088,6 +1092,16 @@ function spawnFruit(scene) {
     }
     
     let type = Phaser.Utils.Array.GetRandom(allowedFruits);
+
+    // Create a temporary fruit to measure its height
+    const tempFruit = scene.matter.add.image(-50, -50, type, null, {
+    shape: "circle",
+    restitution: 0.1
+    });
+    tempFruit.setVisible(false);
+
+    fruitHeight = scene.textures.get(type).getSourceImage().height / 2;
+    tempFruit.destroy();
 
     currentFruit = scene.matter.add.image(config.width/2, 20, type, null, {
         shape: "circle",
@@ -1442,7 +1456,7 @@ async function showLeaderboard(scene) {
         
         // Show top 10 scores
         data.slice(0, 10).forEach((entry, index) => {
-            const text = scene.add.text(config.width / 2, 175 + index * 40, `${index+1}. ${entry.player_name}: ${entry.score}`, {
+            const text = scene.add.text(config.width / 2, 260 + index * 60, `${index+1}. ${entry.player_name}: ${entry.score}`, {
                 fontSize: '44px',
                 fontFamily: 'Arial',
                 color: '#ffff00',
@@ -1487,7 +1501,7 @@ function playMergeAnimation(scene, fruit) {
 
 // Show a small "Score in top 10!" notification
 function showLeaderboardNotification(scene, score) {
-    const notif = scene.add.text(config.width - 20, config.height - 20, `${score} is in top 10, Saved to leaderboard!`, {
+    const notif = scene.add.text(config.width - 100, config.height - 100, `${score} is in top 10, Saved to leaderboard!`, {
         fontSize: '16px',
         fontFamily: 'Arial',
         color: '#eeff00ff',
