@@ -1093,8 +1093,13 @@ function mergeFruits(scene, f1, f2) {
         maxUnlockedIndex = idx + 1;
     }
     
-    score += (idx + 1) * 10;
-    scoreText.setText('Score: ' + score);
+    if (idx === 8) {
+        score += (idx + 2) * 10;
+        scoreText.setText('Score: ' + score);
+    } else {
+        score += (idx + 1) * 10;
+        scoreText.setText('Score: ' + score);
+    }    
 }
 
 function spawnFruit(scene) {
