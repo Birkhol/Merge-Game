@@ -1480,10 +1480,16 @@ async function showLeaderboard(scene) {
         
         // Show top 10 scores
         data.slice(0, 10).forEach((entry, index) => {
+        let color;
+        if (index === 0) color = "gold";
+        else if (index === 1) color = "silver";
+        else if (index === 2) color = "#cd7f32"; // bronze
+        else color = "white";
+
             const text = scene.add.text(config.width / 2, 260 + index * 60, `${index+1}. ${entry.player_name}: ${entry.score}`, {
                 fontSize: '44px',
                 fontFamily: 'Arial',
-                color: '#ffff00',
+                color: color,
                 stroke: '#000000',
                 strokeThickness: 3
             }).setOrigin(0.5);
