@@ -1912,7 +1912,7 @@ if (!document.getElementById("slider-style")) {
     });
     settingsIngameUI.push(backIngameButton.bg, backIngameButton.label);
 
-    // Keep track so you can clear later
+    // Keep track so it can clear later
     menuUI = settingsIngameUI;
 }
 
@@ -1924,3 +1924,39 @@ function clearSettingsIngameUI() {
     }
 
 }
+
+// Fetch leaderboard for the left sidebar
+async function updateLeaderboard() {
+  try {
+    const response = await fetch("https://merge-game.onrender.com/leaderboard");
+    const data = await response.json();
+
+    const leaderboardDiv = document.getElementById("leaderboard");
+    leaderboardDiv.innerHTML = "<h2>Leaderboard</h2>";
+
+    data.slice(0, 10).forEach((entry, index) => {
+      const p = document.createElement("p");
+      p.textContent = `${index + 1}. ${entry.player_name} - ${entry.score}`;
+
+      // Color based on rank
+      if (index === 0) p.style.color = "gold";
+      else if (index === 1) p.style.color = "silver";
+      else if (index === 2) p.style.color = "#cd7f32"; // bronze
+      else p.style.color = "white";
+
+      leaderboardDiv.appendChild(p);
+    });
+
+  } catch (err) {
+    console.error("Failed to fetch leaderboard:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const refreshBtn = document.getElementById("refresh-leaderboard");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      updateLeaderboard();
+    });
+  }
+});
