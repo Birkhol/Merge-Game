@@ -1932,7 +1932,14 @@ async function updateLeaderboard() {
     const data = await response.json();
 
     const leaderboardDiv = document.getElementById("leaderboard");
-    leaderboardDiv.innerHTML = "<h2>Leaderboard</h2>";
+
+    let entriesContainer = document.getElementById("leaderboard-entries");
+    if (!entriesContainer) {
+      entriesContainer = document.createElement("div");
+      entriesContainer.id = "leaderboard-entries";
+      leaderboardDiv.appendChild(entriesContainer);
+    }
+    entriesContainer.innerHTML = "";
 
     data.slice(0, 10).forEach((entry, index) => {
       const p = document.createElement("p");
@@ -1944,19 +1951,18 @@ async function updateLeaderboard() {
       else if (index === 2) p.style.color = "#cd7f32"; // bronze
       else p.style.color = "white";
 
-      leaderboardDiv.appendChild(p);
+      entriesContainer.appendChild(p);
     });
-
   } catch (err) {
     console.error("Failed to fetch leaderboard:", err);
   }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const refreshBtn = document.getElementById("refresh-leaderboard");
-  if (refreshBtn) {
-    refreshBtn.addEventListener("click", () => {
-      updateLeaderboard();
-    });
-  }
+  updateLeaderboard();
+
+  const refreshButton = document.getElementById("refresh-leaderboard");
+  refreshButton.addEventListener("click", () => {
+    updateLeaderboard();
+  });
 });

@@ -57,6 +57,11 @@
   text-align: center;
 }
 
+#leaderboard p {
+  margin: 28px 0;
+  font-size: 28px;
+}
+
 #refresh-leaderboard {
   position: absolute;
   top: 10px;
