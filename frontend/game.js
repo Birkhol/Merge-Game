@@ -928,8 +928,10 @@ function create() {
 
             // spawn a new one after short delay
             this.time.delayedCall(500, () => {
+            if (gameStarted && !currentFruit) {
                 spawnFruit(this);
-            });
+            }
+        });
         } else {
             console.log("Cannot drop here: overlapping!");
         }
@@ -1534,7 +1536,7 @@ function playMergeAnimation(scene, fruit) {
 
 // Show a small "Score in top 10!" notification
 function showLeaderboardNotification(scene, score) {
-    const notif = scene.add.text(config.width - 100, config.height - 100, `${score} is in top 10, Saved to leaderboard!`, {
+    const notif = scene.add.text(config.width - 100, config.height - 110, `${score} is in top 10, Saved to leaderboard!`, {
         fontSize: '16px',
         fontFamily: 'Arial',
         color: '#eeff00ff',
