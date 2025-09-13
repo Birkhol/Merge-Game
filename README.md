@@ -4,6 +4,7 @@
 Ingame                     |  Menu
 :-------------------------:|:-------------------------:
 ![Ingame Screenshot](IngameScreenshot.png)  |  ![Menu Screenshot](MenuScreenshot.png)
+![Leaderboard Screenshot](LeaderboardScreenshot.png)
 
 ## License
 This project is proprietary software.  
