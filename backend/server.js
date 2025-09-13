@@ -27,19 +27,32 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY // kept secret in .env
 );
 
-// Save score
+// Save score and validate
 app.post("/submit-score", async (req, res) => {
   const { player_name, score } = req.body;
 
-  if (!player_name || !score) {
-    return res.status(400).json({ error: "Missing username or score" });
+  // Validate username
+  if (!player_name || player_name.length < 3 || player_name.length > 16) {
+    return res.status(400).json({ error: "Invalid username length, or username is null" });
+  }
+  if (!/^[A-Za-z0-9ÆØÅæøåÖöÄä\-_!]+$/.test(player_name)) {
+    return res.status(400).json({ error: "Invalid characters in username" });
   }
 
+  // Validate score
+  if (typeof score !== "number" || score < 0) {
+    return res.status(400).json({ error: "Invalid score" });
+  }
+
+  // Save to Supabase
   const { error } = await supabase.from("highscores").insert([{ player_name, score }]);
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
 
   res.json({ message: "Score saved!" });
 });
+
 
 // Get world record
 app.get("/world-record", async (req, res) => {

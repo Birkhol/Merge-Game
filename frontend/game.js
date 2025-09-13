@@ -1170,16 +1170,15 @@ function endGame(scene) {
         savedHighscore = score;
     }
 
+    // Update global and ingame UI
+    highscore = savedHighscore;
+    highscoreText.setText('Highscore: ' + highscore);
+
     // Submit score to backend
     const playerName = localStorage.getItem('playerName');
     if (playerName) {
         submitScore(scene, playerName, score);
     }
-
-    // Update global and ingame UI
-    highscore = savedHighscore;
-    highscoreText.setText('Highscore: ' + highscore);
-
 
     // Show Game Over text
     gameOverText = scene.add.text(config.width / 2, config.height / 2 - 300, "Game Over", {
@@ -1430,6 +1429,12 @@ async function submitScore(scene, playerName, score) {
         const data = await response.json();
         console.log("Score submitted:", data);
 
+        if (!response.ok) {
+            console.error("Score submission failed:", data.error);
+            alert(`Error: ${data.error}`);
+            return;
+        }
+
         const leaderBoardResponse = await fetch("https://merge-game.onrender.com/leaderboard");
         const top10 = await leaderBoardResponse.json();
 
@@ -1440,6 +1445,7 @@ async function submitScore(scene, playerName, score) {
         }
     } catch (err) {
         console.error("Failed to submit score:", err);
+        alert("Could not connect to server, score might not have been saved.");
     }
 }
 
@@ -1707,6 +1713,30 @@ if (!document.getElementById("slider-style")) {
     });
     settingsUI.push(backButton.bg, backButton.label);
 
+    // Change Username button
+const changeUsernameButton = createButton(scene,config.width / 2,config.height / 2 + 340, 280, 70, 0x2196f3, '#ffffff', 'Change Username', () => {
+
+    const newUsername = prompt("Enter your new username:");
+    if (!newUsername) return;
+
+    // Validate username (same rules as backend)
+    if (newUsername.length < 3 || newUsername.length > 16) {
+      alert("Username must be between 3 and 16 characters.");
+      return;
+    }
+    if (!/^[A-Za-z0-9ÆØÅæøåÖöÄä\-_!]+$/.test(newUsername)) {
+      alert("Invalid characters in username.");
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem("playerName", newUsername);
+    alert(`Username changed to: ${newUsername}`);
+  }
+);
+
+settingsUI.push(changeUsernameButton.bg, changeUsernameButton.label);
+
     // Keep track so you can clear later
     menuUI = settingsUI;
 }
@@ -1754,11 +1784,25 @@ function createInGameMenu(scene) {
             currentFruit.destroy();
             currentFruit = null;
         }
+        
+        // Save highscore
+        let savedHighscore = localStorage.getItem('highscore') || 0;
+        savedHighscore = parseInt(savedHighscore);
+        if (score > savedHighscore) {
+            localStorage.setItem('highscore', score);
+            savedHighscore = score;
+        }
+
+        // Update global and ingame UI
+        highscore = savedHighscore;
+        highscoreText.setText('Highscore: ' + highscore);
 
         const playerName = localStorage.getItem('playerName');
         if(score >= 1500 && playerName) {
             submitScore(scene, playerName, score);
         }
+
+        
 
         // Remove end game UI if any
         endGameUI.forEach(obj => obj.destroy());
