@@ -797,6 +797,8 @@ const game = new Phaser.Game(config);
 // Global variables
 let fruits = [];
 let fruitTypes = ["tomato2", "apple2", "peach2", "watermelon2", "orange2", "plum2", "avocado2", "strawberry2", "pineapple2", "dragonfruit2"];
+let backgrounds = ["background2", "woodbackground", "graybackground"];
+let currentBackgroundIndex = 0;
 let maxUnlockedIndex = 0;
 let currentFruit = null;
 let hamburger;
@@ -829,8 +831,9 @@ let aboveDeathLineTimer = new Map();
 
 function preload() {
     // Old fruit sprites
-    this.load.image('background', 'Assets/BlueBackground.jpg');
     this.load.image('background2', 'Assets/BlueBackground2.png');
+    this.load.image('graybackground', 'Assets/GrayBackground.png');
+    this.load.image('woodbackground', 'Assets/WoodBackground.png');
     this.load.image('tomato', 'Assets/Tomato.png');
     this.load.image('apple', 'Assets/Apple.png');
     this.load.image('peach', 'Assets/Peach.png');
@@ -859,7 +862,22 @@ function preload() {
 
 function create() {
     
-    this.add.image(config.width/2, config.height/2, 'background2');
+// Load saved background index
+let savedBg = localStorage.getItem("backgroundIndex");
+if (savedBg !== null) {
+    currentBackgroundIndex = parseInt(savedBg, 10);
+} else {
+    currentBackgroundIndex = 0;
+    localStorage.setItem("backgroundIndex", 0);
+}
+
+// Add background image if not already added
+if (!this.backgroundImage) {
+    this.backgroundImage = this.add.image(config.width / 2, config.height / 2, backgrounds[currentBackgroundIndex]);
+    this.backgroundImage.setDepth(-1); // behind everything
+    this.backgroundImage.setScrollFactor(0);
+    this.backgroundImage.setDisplaySize(config.width, config.height);
+}
 
     deathLineGraphics = this.add.graphics();
     deathLineGraphics.lineStyle(2, 0xff0000, 1);
@@ -1387,6 +1405,41 @@ function showMenu(scene) {
         menuUI.push(saveButton.bg, saveButton.label);
 
     } else {
+        let previewIndex = (currentBackgroundIndex + 1) % backgrounds.length;
+
+        // Border for background preview
+        const previewContainer = scene.add.container(config.width / 2 - 250, 70);
+        const border = scene.add.rectangle(0, 0, 100, 100, 0xffffff)
+            .setStrokeStyle(10, 0xffff00)
+            .setOrigin(0.5);
+
+        // Change Background button
+        const bgButton = scene.add.image(0, 0, backgrounds[previewIndex])
+        .setDisplaySize(100, 100)
+        .setInteractive({ useHandCursor: false })
+        
+        bgButton.on('pointerover', () => {
+            scene.tweens.add({ targets: previewContainer, color: 0xffffff, scale: 1.05, duration: 150, ease: "Power2" });
+            border.setStrokeStyle(10, 0xffe600);
+        });
+
+        bgButton.on('pointerout', () => {
+            scene.tweens.add({targets: previewContainer, scale: 1, duration: 150, ease: "Power2" });
+            border.setStrokeStyle(10, 0xffff00);
+        });
+
+        bgButton.on('pointerdown', () => {
+        currentBackgroundIndex = (currentBackgroundIndex + 1) % backgrounds.length;
+        localStorage.setItem('backgroundIndex', currentBackgroundIndex);
+        if (scene.backgroundImage) {
+            scene.backgroundImage.setTexture(backgrounds[currentBackgroundIndex]);
+        }
+
+        previewIndex = (currentBackgroundIndex + 1) % backgrounds.length;
+        bgButton.setTexture(backgrounds[previewIndex]);
+    });
+    previewContainer.add([border, bgButton]);
+    menuUI.push(bgButton, previewContainer);
 
     // Play button
     const playButton = createButton(scene, config.width / 2, config.height / 2 + 120, 270, 90, 0x4CAF50, '#ffffff', 'Play', () => {
@@ -1395,10 +1448,8 @@ function showMenu(scene) {
         menuUI = [];
 
         startGame(scene);
-    }
-);
-
-menuUI.push(playButton.bg, playButton.label);
+    });
+    menuUI.push(playButton.bg, playButton.label);
 
     const leaderboardButton = createButton(scene, config.width / 2, config.height / 2 + 320, 370, 90, 0x27A3F5, '#ffffff', 'Leaderboard', async () => {
 
@@ -1408,20 +1459,17 @@ menuUI.push(playButton.bg, playButton.label);
 
     // show leaderboard
     await showLeaderboard(scene);
-    }
-);
+    });
+    menuUI.push(leaderboardButton.bg, leaderboardButton.label);
 
-menuUI.push(leaderboardButton.bg, leaderboardButton.label);
+    const settingsButton = createButton(scene, config.width / 2, config.height / 2 + 460, 160, 60, 0x424242, '#ffffff', 'Settings', () => {
+        // clear menu
+        menuUI.forEach(obj => obj.destroy());
+        menuUI = [];
 
-const settingsButton = createButton(scene, config.width / 2, config.height / 2 + 460, 160, 60, 0x424242, '#ffffff', 'Settings', () => {
-    // clear menu
-    menuUI.forEach(obj => obj.destroy());
-    menuUI = [];
-
-    showSettings(scene);
-});
-
-menuUI.push(settingsButton.bg, settingsButton.label);
+        showSettings(scene);
+    });
+    menuUI.push(settingsButton.bg, settingsButton.label);
 
     }
 }
