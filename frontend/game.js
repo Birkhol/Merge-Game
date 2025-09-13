@@ -1338,11 +1338,41 @@ function showMenu(scene) {
 
             let enteredName = nameInput.node.value.trim();
             if (enteredName.length < 3 || enteredName.length > 16) {
-                alert("Name must be between 3 and 16 characters!")
+                const errorTextLength = scene.add.text(config.width / 2, config.height / 2 + 180, 
+                "Name must be 3–16 characters!", {
+                fontSize: '24px',
+                fontFamily: 'Arial',
+                color: '#ff4444',
+                stroke: '#000000',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+
+            scene.tweens.add({
+                targets: errorTextLength,
+                alpha: 1,
+                duration: 5000,
+                ease: 'Power2',
+                onComplete: () => errorTextLength.destroy()
+            });
                 return;
             }
             if (!/^[A-Za-z0-9\-_!?ÆØÅæøåÖöÄä]+$/.test(enteredName)) {
-                alert("Name can only contain letters and numbers!");
+                const errorTextCharacters = scene.add.text(config.width / 2, config.height / 2 + 180, 
+                "Only letters and numbers", {
+                fontSize: '24px',
+                fontFamily: 'Arial',
+                color: '#ff4444',
+                stroke: '#000000',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+
+            scene.tweens.add({
+                targets: errorTextCharacters,
+                alpha: 1,
+                duration: 5000,
+                ease: 'Power2',
+                onComplete: () => errorTextCharacters.destroy()
+            });
                 return;
             }
                 // Save name
@@ -1738,11 +1768,41 @@ const changeUsernameButton = createButton(scene,config.width / 2,config.height /
 
             let enteredName = nameInput.node.value.trim();
             if (enteredName.length < 3 || enteredName.length > 16) {
-                alert("Name must be between 3 and 16 characters!")
+                const errorText = scene.add.text(config.width / 2, config.height / 2 + 180, 
+                "Name must be 3–16 characters!", {
+                fontSize: '24px',
+                fontFamily: 'Arial',
+                color: '#ff4444',
+                stroke: '#000000',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+
+            scene.tweens.add({
+                targets: errorText,
+                alpha: 1,
+                duration: 5000,
+                ease: 'Power2',
+                onComplete: () => errorText.destroy()
+            });
                 return;
             }
             if (!/^[A-Za-z0-9\-_!?ÆØÅæøåÖöÄä]+$/.test(enteredName)) {
-                alert("Name can only contain letters and numbers!");
+                const errorTextCharacters = scene.add.text(config.width / 2, config.height / 2 + 180, 
+                "Only letters and numbers", {
+                fontSize: '24px',
+                fontFamily: 'Arial',
+                color: '#ff4444',
+                stroke: '#000000',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+
+            scene.tweens.add({
+                targets: errorTextCharacters,
+                alpha: 1,
+                duration: 5000,
+                ease: 'Power2',
+                onComplete: () => errorTextCharacters.destroy()
+            });
                 return;
             }
                 // Save name
