@@ -1563,7 +1563,7 @@ function createButton(scene, x, y, width, height, bgColor = 0x4CAF50, textColor 
     // Button background
     const bg = scene.add.rectangle(x, y, width, height, bgColor, 1)
         .setOrigin(0.5)
-        .setStrokeStyle(2, 0xffffff, 0.2) // subtle border
+        .setStrokeStyle(2, 0xffffff, 0.2)
         .setInteractive({ useHandCursor: false })
         .setDepth(1001)
 
@@ -1716,22 +1716,66 @@ if (!document.getElementById("slider-style")) {
     // Change Username button
 const changeUsernameButton = createButton(scene,config.width / 2,config.height / 2 + 340, 280, 70, 0x2196f3, '#ffffff', 'Change Username', () => {
 
-    const newUsername = prompt("Enter your new username:");
-    if (!newUsername) return;
+    fullscreenButton.bg.setVisible(false), fullscreenButton.label.setVisible(false);
+    volumeText.setVisible(false);
+    volumeSlider.setVisible(false);
+    backButton.bg.setVisible(false), backButton.label.setVisible(false);
+    changeUsernameButton.bg.setVisible(false), changeUsernameButton.label.setVisible(false);
 
-    // Validate username (same rules as backend)
-    if (newUsername.length < 3 || newUsername.length > 16) {
-      alert("Username must be between 3 and 16 characters.");
-      return;
-    }
-    if (!/^[A-Za-z0-9ÆØÅæøåÖöÄä\-_!]+$/.test(newUsername)) {
-      alert("Invalid characters in username.");
-      return;
-    }
+    // Create a DOM input box
+        const nameInput = scene.add.dom(config.width / 2, config.height / 2, 'input', {
+            type: 'text',
+            fontSize: '38px',
+            padding: '5px',
+            width: '400px',
+            maxlength: 16,
+            minlength: 2,
+            pattern: "[A-Za-z0-9\-_!?ÆØÅæøåÖöÄä]+"
+        });
+        settingsUI.push(nameInput);
 
-    // Save to localStorage
-    localStorage.setItem("playerName", newUsername);
-    alert(`Username changed to: ${newUsername}`);
+        const saveButton = createButton(scene, config.width / 2, config.height / 2 + 100, 400, 90, 0x4CAF50, '#ffffff', 'Save Name', () => {
+
+            let enteredName = nameInput.node.value.trim();
+            if (enteredName.length < 3 || enteredName.length > 16) {
+                alert("Name must be between 3 and 16 characters!")
+                return;
+            }
+            if (!/^[A-Za-z0-9\-_!?ÆØÅæøåÖöÄä]+$/.test(enteredName)) {
+                alert("Name can only contain letters and numbers!");
+                return;
+            }
+                // Save name
+                localStorage.setItem("playerName", enteredName);
+
+                // Give user confirmation
+                const userNameChangedText = scene.add.text(config.width / 2, config.height / 2 - 50, "Username changed", {
+                    fontSize: '18px',
+                    fontFamily: 'Arial',
+                    color: '#ffee00ff',
+                }).setOrigin(0.5).setDepth(1004);
+
+                scene.tweens.add({
+                    targets: userNameChangedText,
+                    alpha: 1,
+                    duration: 3500,
+                    ease: 'Power2',
+                    onComplete: () => userNameChangedText.destroy()
+                });
+
+                menuUI.forEach(obj => obj.destroy());
+                menuUI = [];
+                showMenu(scene);
+        });
+
+        settingsUI.push(saveButton.bg, saveButton.label);
+
+        // Back button
+    const backUsernameButton = createButton(scene, config.width / 2, config.height / 2 + 340, 180, 60, 0xF44336, '#ffffff', 'Back', () => {
+        settingsUI.forEach(obj => obj.destroy());
+        showSettings(scene);
+    });
+    settingsUI.push(backUsernameButton.bg, backUsernameButton.label);
   }
 );
 
