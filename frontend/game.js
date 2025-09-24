@@ -817,6 +817,8 @@ let menuUI = [];
 let settingsIngameUI = [];
 let overlay;
 let overlayHamburger;
+let gamblingPoints = 0;
+let gamblingPointsText;
 let highscore = 0;
 let highscoreText;
 let quitButton;
@@ -870,6 +872,10 @@ if (savedBg !== null) {
     currentBackgroundIndex = 0;
     localStorage.setItem("backgroundIndex", 0);
 }
+
+// Gambling points
+gamblingPoints = localStorage.getItem("gamblingPoints") || 0;
+gamblingPoints = parseInt(gamblingPoints);
 
 // Add background image if not already added
 if (!this.backgroundImage) {
@@ -1061,7 +1067,10 @@ function mergeFruits(scene, f1, f2) {
         scene.sound.play("mergeLastSound", { volume: 0.2 });
         
         score += (idx + 11) * 10;
-        scoreText.setText('Score: ' + score);  
+        scoreText.setText('Score: ' + score);
+        
+        gamblingPoints += 1;
+        localStorage.setItem("gamblingPoints", gamblingPoints);
 
         scene.time.delayedCall(160, () => {
             f1.destroy();
@@ -1070,8 +1079,6 @@ function mergeFruits(scene, f1, f2) {
         
         return;
     }
-    
-    
 
     // next fruit type
     let nextType = fruitTypes[idx + 1];
@@ -1442,7 +1449,7 @@ function showMenu(scene) {
     menuUI.push(bgButton, previewContainer);
 
     // Play button
-    const playButton = createButton(scene, config.width / 2, config.height / 2 + 120, 270, 90, 0x4CAF50, '#ffffff', 'Play', () => {
+    const playButton = createButton(scene, config.width / 2, config.height / 2 + 100, 270, 90, 0x4CAF50, '#ffffff', 'Play', () => {
         // remove menu UI
         menuUI.forEach(obj => obj.destroy());
         menuUI = [];
@@ -1451,9 +1458,16 @@ function showMenu(scene) {
     });
     menuUI.push(playButton.bg, playButton.label);
 
-    const leaderboardButton = createButton(scene, config.width / 2, config.height / 2 + 320, 370, 90, 0x27A3F5, '#ffffff', 'Leaderboard', async () => {
+    // Gambling button
+    const gamblingButton = createButton(scene, config.width / 2, config.height / 2 + 210, 300, 70, 0xFF69B4, '#ffffff', `Gamble (${gamblingPoints})`, () => {
+        menuUI.forEach(obj => obj.destroy());
+        menuUI = [];
+        showGambling(scene);
+    });
+    menuUI.push(gamblingButton.bg, gamblingButton.label);
 
-    // remove menu UI
+    // Leaderboard button
+    const leaderboardButton = createButton(scene, config.width / 2, config.height / 2 + 320, 370, 90, 0x27A3F5, '#ffffff', 'Leaderboard', async () => {
     menuUI.forEach(obj => obj.destroy());
     menuUI = [];
 
@@ -1462,8 +1476,8 @@ function showMenu(scene) {
     });
     menuUI.push(leaderboardButton.bg, leaderboardButton.label);
 
+    // Settings button
     const settingsButton = createButton(scene, config.width / 2, config.height / 2 + 460, 160, 60, 0x424242, '#ffffff', 'Settings', () => {
-        // clear menu
         menuUI.forEach(obj => obj.destroy());
         menuUI = [];
 
@@ -1677,6 +1691,33 @@ function createButton(scene, x, y, width, height, bgColor = 0x4CAF50, textColor 
     });
 
     return { bg, label };
+}
+
+// Gambling page
+function showGambling(scene) {
+
+    deathLineGraphics.setVisible(false);
+    highscoreText.setVisible(false);
+
+    setupPlinko(scene);
+    
+    gamblingPointsText = scene.add.text(config.width - 140, 25, `GambaPoints: ${gamblingPoints}`, {
+        fontSize: '30px',
+        fontFamily: 'Arial',
+        color: '#ffff00',
+        stroke: '#000000',
+        strokeThickness: 4
+    }).setOrigin(0.5);
+    menuUI.push(gamblingPointsText);
+
+    // Back button to return to menu
+    const backButton = createButton(scene, 50, 25, 90, 40, 0x303030, '#ffffff', 'Back', () => {
+        active = false;
+        menuUI.forEach(obj => obj.destroy());
+        menuUI = [];
+        showMenu(scene);
+    });
+    menuUI.push(backButton.bg, backButton.label);
 }
 
 // Settings page
@@ -1954,8 +1995,6 @@ function createInGameMenu(scene) {
             submitScore(scene, playerName, score);
         }
 
-        
-
         // Remove end game UI if any
         endGameUI.forEach(obj => obj.destroy());
         endGameUI = [];
@@ -2170,3 +2209,90 @@ document.addEventListener("DOMContentLoaded", () => {
     updateLeaderboard();
   });
 });
+
+// Plinko gambling game
+function setupPlinko(scene) {
+    // Background
+    const bg = scene.add.rectangle(config.width / 2, config.height / 2, config.width, config.height, 0x1e1e2f);
+    menuUI.push(bg);
+
+    // Peg grid
+    let rows = 12;
+    let cols = 9;
+    let spacingX = 80;
+    let spacingY = 60;
+    let offsetX = 20;
+    let offsetY = 300;
+
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            let x = offsetX + col * spacingX + (row % 2 === 0 ? spacingX / 2 : 0);
+            let y = offsetY + row * spacingY;
+
+            let peg = scene.matter.add.circle(x, y, 10, { isStatic: true });
+            let pegSprite = scene.add.circle(x, y, 10, 0xffffff);
+            scene.matter.add.gameObject(pegSprite, peg);
+            menuUI.push(pegSprite);
+        }
+    }
+
+    // Slots
+    scene.slots = [];
+    for (let i = 0; i < cols; i++) {
+        let slotX = offsetX + i * spacingX;
+        let slot = scene.add.rectangle(slotX, config.height - 40, spacingX - 10, 20, 0x4444ff);
+        scene.matter.add.gameObject(slot, { isStatic: true });
+        scene.slots.push(slot);
+        menuUI.push(slot);
+    }
+
+    // Drop button
+    let dropBtn = scene.add.text(config.width - 120, 70, "DROP", {
+        fontSize: "32px",
+        backgroundColor: "#ff0",
+        color: "#000",
+        padding: { x: 10, y: 5 }
+    }).setInteractive();
+    menuUI.push(dropBtn);
+
+    dropBtn.on("pointerdown", () => {
+        if (gamblingPoints <= 0) return;
+
+    gamblingPoints--;
+    localStorage.setItem("gamblingPoints", gamblingPoints);
+    gamblingPointsText.setText(`GambaPoints: ${gamblingPoints}`);
+
+    // Create yellow ball
+    let ball = scene.matter.add.image(config.width / 2, 50, null);
+    ball.setCircle(15);
+    ball.setBounce(0.6);
+    ball.setFriction(0.005);
+
+    let gfx = scene.add.circle(ball.x, ball.y, 15, 0xffff00);
+    menuUI.push(ball, gfx);
+    
+    // Sync gfx with ball
+        scene.events.on("update", () => {
+            if (gfx.active && ball.active) {
+                gfx.setPosition(ball.x, ball.y);
+            }
+        });
+
+    
+
+    // Detect landing
+    scene.matter.world.once("collisionstart", (event) => {
+        event.pairs.forEach(pair => {
+            if (pair.bodyA.gameObject === ball || pair.bodyB.gameObject === ball) {
+                scene.slots.forEach((slot, index) => {
+                    if (pair.bodyA.gameObject === slot || pair.bodyB.gameObject === slot) {
+                        console.log("Ball landed in slot " + index);
+                        // TODO: give reward depending on index
+                    }
+                });
+            }
+        });
+    });
+});
+}
+
