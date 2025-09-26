@@ -2216,83 +2216,164 @@ function setupPlinko(scene) {
     const bg = scene.add.rectangle(config.width / 2, config.height / 2, config.width, config.height, 0x1e1e2f);
     menuUI.push(bg);
 
+    // Categories (for collision filtering)
+    let ballCategory = scene.matter.world.nextCategory();
+    let pegCategory = scene.matter.world.nextCategory();
+    let slotCategory = scene.matter.world.nextCategory();
+
     // Peg grid
-    let rows = 12;
-    let cols = 9;
+    let rows = 14;
+    let cols = 7;
     let spacingX = 80;
     let spacingY = 60;
-    let offsetX = 20;
-    let offsetY = 300;
+    let offsetX = 60;
+    let offsetY = 200;
 
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
             let x = offsetX + col * spacingX + (row % 2 === 0 ? spacingX / 2 : 0);
             let y = offsetY + row * spacingY;
 
-            let peg = scene.matter.add.circle(x, y, 10, { isStatic: true });
-            let pegSprite = scene.add.circle(x, y, 10, 0xffffff);
+            let peg = scene.matter.add.circle(x, y, 12, {
+                isStatic: true,
+                collisionFilter: { category: pegCategory }
+            });
+            let pegSprite = scene.add.circle(x, y, 12, 0xffffff);
             scene.matter.add.gameObject(pegSprite, peg);
             menuUI.push(pegSprite);
         }
     }
 
-    // Slots
+    // Slots (bins at bottom)
     scene.slots = [];
-    for (let i = 0; i < cols; i++) {
+    for (let i = 0; i < cols+ 1; i++) {
         let slotX = offsetX + i * spacingX;
-        let slot = scene.add.rectangle(slotX, config.height - 40, spacingX - 10, 20, 0x4444ff);
-        scene.matter.add.gameObject(slot, { isStatic: true });
-        scene.slots.push(slot);
-        menuUI.push(slot);
+
+        // Base
+        let base = scene.matter.add.rectangle(slotX, config.height - 20, spacingX - 5, 20, {
+            isStatic: true,
+            collisionFilter: { category: slotCategory }
+        });
+
+        // Visual base
+        let slotRect = scene.add.rectangle(slotX - 18, config.height - 20, spacingX - 10, 20, 0x4444ff);
+
+        scene.slots.push({ index: i, base, rect: slotRect });
+        menuUI.push(slotRect);
     }
 
-    // Drop button
-    let dropBtn = scene.add.text(config.width - 120, 70, "DROP", {
-        fontSize: "32px",
-        backgroundColor: "#ff0",
-        color: "#000",
-        padding: { x: 10, y: 5 }
-    }).setInteractive();
-    menuUI.push(dropBtn);
+    scene.matter.world.setBounds(0, 0, config.width, config.height, 32, true, true, false, true);
 
-    dropBtn.on("pointerdown", () => {
-        if (gamblingPoints <= 0) return;
+    let lastDropTime = 0;
+
+    // Drop function
+    function dropBall() {
+    const now = scene.time.now;
+
+    if (gamblingPoints <= 0 || now - (scene.lastDropTime || 0) < 500) return;
+    scene.lastDropTime = now;
 
     gamblingPoints--;
     localStorage.setItem("gamblingPoints", gamblingPoints);
     gamblingPointsText.setText(`GambaPoints: ${gamblingPoints}`);
 
-    // Create yellow ball
-    let ball = scene.matter.add.image(config.width / 2, 50, null);
-    ball.setCircle(15);
-    ball.setBounce(0.6);
-    ball.setFriction(0.005);
+    // Randomize spawn X a little
+    let spawnX = config.width / 2 + Phaser.Math.Between(-10, 10);
 
-    let gfx = scene.add.circle(ball.x, ball.y, 15, 0xffff00);
-    menuUI.push(ball, gfx);
-    
-    // Sync gfx with ball
-        scene.events.on("update", () => {
-            if (gfx.active && ball.active) {
-                gfx.setPosition(ball.x, ball.y);
-            }
-        });
+    let ball = scene.matter.add.circle(spawnX, 50, 12, {
+        restitution: 0.6,
+        friction: 0.005,
+        density: 0.001,
+        collisionFilter: { category: ballCategory }
+    });
 
-    
+    // Apply a tiny random force at spawn
+    let randomForceX = Phaser.Math.FloatBetween(-0.008, 0.008);
+    scene.matter.body.applyForce(ball, { x: ball.position.x, y: ball.position.y }, { x: randomForceX, y: 0 });
 
-    // Detect landing
-    scene.matter.world.once("collisionstart", (event) => {
+    let gfx = scene.add.circle(ball.position.x, ball.position.y, 12, 0xffff00);
+    menuUI.push(gfx);
+
+    // Sync graphic to ball
+    const updateGfx = () => gfx.setPosition(ball.position.x, ball.position.y);
+    scene.events.on("update", updateGfx);
+
+    // Ball-specific collision handler
+    const handleCollision = (event) => {
         event.pairs.forEach(pair => {
-            if (pair.bodyA.gameObject === ball || pair.bodyB.gameObject === ball) {
-                scene.slots.forEach((slot, index) => {
-                    if (pair.bodyA.gameObject === slot || pair.bodyB.gameObject === slot) {
-                        console.log("Ball landed in slot " + index);
-                        // TODO: give reward depending on index
+            if (pair.bodyA === ball || pair.bodyB === ball) {
+                scene.slots.forEach(slot => {
+                    if (pair.bodyA === slot.base || pair.bodyB === slot.base) {
+                        console.log("Ball landed in slot " + slot.index);
+                        let slotIndex = slot.index;
+                        // Reward
+                        giveSlotReward(scene, slotIndex);
+
+                        // Destroy only this ball
+                        scene.matter.world.remove(ball);
+                        gfx.destroy();
+                        scene.events.off("update", updateGfx);
+                        scene.matter.world.off("collisionstart", handleCollision);
                     }
                 });
             }
         });
-    });
-});
+    };
+
+    scene.matter.world.on("collisionstart", handleCollision);
 }
+
+
+    // Drop button
+    let dropBtn = scene.add.text(config.width - 140, 60, "DROP", {
+        fontSize: "32px",
+        fontFamily: "Arial",
+        backgroundColor: "#ff0",
+        color: "#000",
+        padding: { x: 10, y: 5 }
+    }).setInteractive();
+
+    dropBtn.on("pointerdown", dropBall);
+    menuUI.push(dropBtn);
+}
+
+// helper: "give" reward and show little animation
+function giveSlotReward(scene, slotIndex) {
+  let reward = 0;
+  const n = scene.slots.length;
+  if (slotIndex === 0 || slotIndex === n - 1) reward = 5;
+  else if (slotIndex === 1 || slotIndex === n - 2) reward = 1; 
+  else if (slotIndex === 2 || slotIndex === n - 3) reward = -1;
+  else reward = -5;
+
+  gamblingPoints += reward;
+  localStorage.setItem("gamblingPoints", gamblingPoints);
+  if (gamblingPoints < 0) gamblingPoints = 0;
+  if (typeof gamblingPointsText !== "undefined") {
+    gamblingPointsText.setText(`GambaPoints: ${gamblingPoints}`);
+  }
+
+  // small floating text when reward lands
+  const slotX = scene.slots[slotIndex].x;
+  const slotY = scene.slots[slotIndex].y - 30;
+  const bonus = scene.add.text(slotX, slotY, `+${reward}`, {
+    fontSize: '22px',
+    fontFamily: 'Arial',
+    color: '#ffff66',
+    stroke: '#000000',
+    strokeThickness: 2
+  }).setOrigin(0.5).setDepth(2000);
+
+  scene.tweens.add({
+    targets: bonus,
+    y: slotY - 40,
+    alpha: 0,
+    duration: 1200,
+    ease: 'Power1',
+    onComplete: () => bonus.destroy()
+  });
+
+  return reward;
+}
+
 
